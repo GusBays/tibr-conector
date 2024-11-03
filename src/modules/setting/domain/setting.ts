@@ -1,9 +1,9 @@
-import { Model, Timestamps } from '../../../common/contracts/contracts'
+import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
 
 export interface Setting extends Model, Timestamps {
     agis: AgisSetting
     bagy: BagySetting
-    pricing: Pricing
+    pricing: PriceSetting
 }
 
 export interface AgisSetting {
@@ -20,12 +20,19 @@ export interface BagySetting {
     active: boolean
 }
 
-export interface Pricing {
+export interface PriceSetting {
     name: string
-    groups: PriceGroup[]
+    groups: PriceSettingGroup[]
 }
 
-export interface PriceGroup {
+export interface PriceSettingGroup {
     name: string
     markup: string
+}
+
+export interface SettingFilter extends Partial<Model>, Filter {}
+
+export enum SettingTypeEnum {
+    SERVICE = 'SettingService',
+    REPOSITORY = 'SettingRepository'
 }
