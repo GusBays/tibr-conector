@@ -1,8 +1,33 @@
-import { inject, injectable } from "tsyringe";
-import { ResourceTypeEnum } from "./resource";
-import { ResourceRepository } from "./resource-repository";
+import { container, inject, injectable } from 'tsyringe'
+import { Meta } from '../../../common/contracts/contracts'
+import { NotFound } from '../../../common/exceptions/not-found'
+import { isEmpty, throwIf } from '../../../common/helpers/helper'
+import { Resource, ResourceFilter, ResourceTypeEnum } from './resource'
+import { ResourceRepository } from './resource-repository'
 
 @injectable()
 export class ResourceService {
     constructor(@inject(ResourceTypeEnum.SERVICE) private readonly repository: ResourceRepository) {}
+
+    static getInstance(): ResourceService {
+        return container.resolve(ResourceTypeEnum.SERVICE)
+    }
+
+    async create(data: Resource): Promise<Resource> {
+        return await this.repository.create(data)
+    }
+
+    async getPaginate(filter: ResourceFilter): Promise<Meta<Resource>> {
+        return await this.repository.getPaginate(filter)
+    }
+
+    async getOne(filter: ResourceFilter): Promise<Resource> {
+        const resource = await this.repository.getOne(filter)
+        throwIf(isEmpty(resource), NotFound, ['resource'])
+        return resource
+    }
+
+    async update(data: Resource): Promise<Resource> {
+        return await this.repository.update(data)
+    }
 }

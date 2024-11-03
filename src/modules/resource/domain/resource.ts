@@ -1,4 +1,4 @@
-import { Filter, Model, Timestamps } from "../../../common/contracts/contracts"
+import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
 
 export interface Resource extends Model, Timestamps {
     type: ResourceType
@@ -10,7 +10,12 @@ export interface Resource extends Model, Timestamps {
     target_payload: Record<string, any>
 }
 
-export interface ResourceFilter extends Partial<Model>, Filter {}
+export interface ResourceFilter extends Partial<Model>, Filter {
+    source?: string
+    source_id?: number
+    target?: string
+    target_id?: number
+}
 
 export enum ResourceType {
     PRODUCT = 'product'
