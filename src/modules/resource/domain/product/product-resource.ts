@@ -6,6 +6,7 @@ export interface ProductResource extends Resource {
 }
 
 export interface ProductConfig {
+    category_default_id: number
     name: string
     short_description: string
     description: string
@@ -22,4 +23,6 @@ export interface ProductConfig {
     active: boolean
     partial_update: boolean
     allowed_to_update: boolean
+    category_ids?: number[]
+    feature_ids?: number[]
 }

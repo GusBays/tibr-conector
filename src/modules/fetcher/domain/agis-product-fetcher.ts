@@ -35,8 +35,9 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
         for (let i = 1; i <= pages; i++) {
             const { items } = await request.getProducts(pagination(i, 500))
 
+            const byAllowedToImport = (item: AgisProduct) => item.price >= this.setting.config.min_price
             const toResource = async (item: AgisProduct) => resources.push(await this.toResource(item))
-            await Promise.all(items.map(toResource))
+            await Promise.all(items.filter(byAllowedToImport).map(toResource))
         }
 
         return resources
@@ -58,19 +59,20 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
             const getCustomAttribute = (code: AgisProductCustomAttributeCode) => {
                 const byCode = (attribute: AgisProductCustomAttribute) => attribute.attribute_code === code
                 const customAttribute = item.custom_attributes.find(byCode)
-                return isNotEmpty(customAttribute) ? customAttribute.value : null
+                return isNotEmpty(customAttribute) && isNotEmpty(customAttribute.value) ? customAttribute.value : null
             }
 
             const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
 
             return {
                 name: resource?.config.name ?? item.name,
+                category_default_id: resource?.config.category_default_id ?? this.setting.config.category_default_id,
                 description: resource.config?.description ?? getCustomAttribute(AgisProductCustomAttributeCode.DESCRIPTION),
                 short_description:
                     resource.config?.short_description ??
                     getCustomAttribute(AgisProductCustomAttributeCode.SHORT_DESCRIPTION),
                 markup: resource?.config.markup ?? 1,
-                price: resource?.config.price ?? item.price,
+                price: resource?.config.price ?? item.price * this.setting.config.markup,
                 weight: resource?.config.weight ?? +getCustomAttribute(AgisProductCustomAttributeCode.GROSS_WEIGHT),
                 height: resource?.config.height ?? +getCustomAttribute(AgisProductCustomAttributeCode.HEIGHT),
                 width: resource?.config.width ?? +getCustomAttribute(AgisProductCustomAttributeCode.WIDTH),

@@ -13,6 +13,8 @@ export interface BagyProduct extends Model, CategoryDefaultBelongs, BagyDimensio
     ncm: string
     active: boolean
     variations: BagyVariation[]
+    category_ids?: number[]
+    feature_ids?: number[]
 }
 
 export interface ProductBelongs {

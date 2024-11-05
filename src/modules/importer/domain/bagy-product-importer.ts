@@ -56,18 +56,21 @@ export class BagyProductImporter extends Importer<BagySetting> {
                     ({ id: variation.id, balance: resource.config.balance } as BagyVariation)
                 product.variations = (resource.target_payload as BagyProduct).variations.map(toBalance)
             } else {
+                product.category_default_id = resource.config.category_default_id
                 product.name = resource.config.name
                 product.description = resource.config.description
                 product.active = resource.config.active
                 product.short_description = resource.config.short_description
                 product.external_id = resource.source_id.toString()
                 product.ncm = resource.config.ncm
+                product.category_ids = resource.config.category_ids ?? [resource.config.category_default_id]
+                product.feature_ids = resource.config.feature_ids
 
                 const toVariation = (group: AgisPricingSettingGroup) => {
                     const variation: BagyVariation = {
                         id: null,
                         product_id: resource.target_id,
-                        price: product.price * group.markup * agis.config.markup,
+                        price: product.price * group.markup,
                         price_compare: null,
                         color_id: null,
                         attribute_value_id: group.attribute_value_id,
