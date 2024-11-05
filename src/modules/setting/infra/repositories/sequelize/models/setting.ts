@@ -1,17 +1,21 @@
 import { AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
-import { AgisSetting, BagySetting, Setting as ISetting, PriceSetting } from '../../../../domain/setting'
+import { Setting as ISetting, SettingConnection, SettingType } from '../../../../domain/setting'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
 export class Setting extends Model<ISetting> {
     @AllowNull(false)
-    @Column(DataType.JSON)
-    declare readonly agis: AgisSetting
+    @Column(DataType.STRING)
+    declare readonly connection: SettingConnection
 
     @AllowNull(false)
-    @Column(DataType.JSON)
-    declare readonly bagy: BagySetting
+    @Column(DataType.STRING)
+    declare readonly type: SettingType
 
     @AllowNull
     @Column(DataType.JSON)
-    declare readonly pricing: PriceSetting
+    declare readonly config: Record<string, any>
+
+    @AllowNull(false)
+    @Column(DataType.BOOLEAN)
+    declare readonly active: boolean
 }

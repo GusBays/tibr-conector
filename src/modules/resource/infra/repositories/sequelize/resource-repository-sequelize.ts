@@ -35,16 +35,23 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         return await this.getOne(filter)
     }
 
+    async getAll(filter: ResourceFilter): Promise<IResource[]> {
+        const resources = await Resource.findAll(this.interpret(filter))
+        const toJSON = (row: Resource) => row.toJSON()
+        return resources.map(toJSON)
+    }
+
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
         const where: WhereOptions<IResource> = {}
 
-        const { id, source, source_id, target, target_id } = filter
+        const { id, source, source_id, target, target_id, type } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
         if (isNotEmpty(source_id)) where.source_id = source_id
         if (isNotEmpty(target)) where.target = target
         if (isNotEmpty(target_id)) where.target_id = target_id
+        if (isNotEmpty(type)) where.type = type
 
         return { where }
     }

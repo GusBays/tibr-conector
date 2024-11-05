@@ -1,41 +1,39 @@
 import { Context } from 'koa'
-import { ResponseError, ResponseStatus } from '../response'
-import { Json } from '../../../contracts/domain/contracts'
 
 export class KoaResponse {
-    private static response(ctx: Context, status: ResponseStatus, body?: Json): void {
+    private static response(ctx: Context, status: number, body?: Record<string, any>): void {
         Object.assign(ctx, { status, body })
     }
 
-    static success(ctx: Context, body?: Json): void {
-        this.response(ctx, ResponseStatus.HTTP_OK, body)
+    static success(ctx: Context, body?: Record<string, any>): void {
+        this.response(ctx, 200, body)
     }
 
-    static created(ctx: Context, body?: Json): void {
-        this.response(ctx, ResponseStatus.HTTP_CREATED, body)
+    static created(ctx: Context, body?: Record<string, any>): void {
+        this.response(ctx, 201, body)
     }
 
     static noContent(ctx: Context): void {
-        this.response(ctx, ResponseStatus.HTTP_NO_CONTENT)
+        this.response(ctx, 204)
     }
 
-    static badRequest(ctx: Context, body: ResponseError): void {
-        this.response(ctx, ResponseStatus.HTTP_BAD_REQUEST, body)
+    static badRequest(ctx: Context, body: Record<string, any>): void {
+        this.response(ctx, 400, body)
     }
 
-    static unauthorized(ctx: Context, body: ResponseError): void {
-        this.response(ctx, ResponseStatus.HTTP_UNAUTHORIZED, body)
+    static unauthorized(ctx: Context, body: Record<string, any>): void {
+        this.response(ctx, 401, body)
     }
 
-    static notFound(ctx: Context, body: ResponseError): void {
-        this.response(ctx, ResponseStatus.HTTP_NOT_FOUND, body)
+    static notFound(ctx: Context, body: Record<string, any>): void {
+        this.response(ctx, 404, body)
     }
 
-    static unprocessableEntity(ctx: Context, body: ResponseError): void {
-        this.response(ctx, ResponseStatus.HTTP_UNPROCESSABLE_ENTITY, body)
+    static unprocessableEntity(ctx: Context, body: Record<string, any>): void {
+        this.response(ctx, 422, body)
     }
 
-    static internalServerError(ctx: Context, body: ResponseError): void {
-        this.response(ctx, ResponseStatus.HTTP_INTERNAL_SERVER_ERROR, body)
+    static internalServerError(ctx: Context, body: Record<string, any>): void {
+        this.response(ctx, 500, body)
     }
 }

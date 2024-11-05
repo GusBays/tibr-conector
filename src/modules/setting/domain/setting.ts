@@ -1,36 +1,34 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
 
 export interface Setting extends Model, Timestamps {
-    agis: AgisSetting
-    bagy: BagySetting
-    pricing: PriceSetting
-}
-
-export interface AgisSetting {
-    markup: number
-    token: string
-    active: boolean
-    min_price: number
-    category_default_id: number
-    weight_default: number
-}
-
-export interface BagySetting {
-    token: string
+    connection: SettingConnection
+    type: SettingType
+    config: Record<string, any>
     active: boolean
 }
 
-export interface PriceSetting {
-    name: string
-    groups: PriceSettingGroup[]
+export interface FetcherSetting extends Setting {
+    type: SettingType.FETCHER
 }
 
-export interface PriceSettingGroup {
-    name: string
-    markup: string
+export interface ImporterSetting extends Setting {
+    type: SettingType.IMPORTER
 }
 
-export interface SettingFilter extends Partial<Model>, Filter {}
+export enum SettingConnection {
+    AGIS = 'agis',
+    BAGY = 'bagy'
+}
+
+export enum SettingType {
+    FETCHER = 'fetcher',
+    IMPORTER = 'importer'
+}
+
+export interface SettingFilter extends Partial<Model>, Filter {
+    connection?: SettingConnection
+    active?: boolean
+}
 
 export enum SettingTypeEnum {
     SERVICE = 'SettingService',

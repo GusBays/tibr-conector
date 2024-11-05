@@ -30,4 +30,8 @@ export class ResourceService {
     async update(data: Resource): Promise<Resource> {
         return await this.repository.update(data)
     }
+
+    async getAll(filter: ResourceFilter): Promise<Resource[]> {
+        return await this.repository.getAll(filter)
+    }
 }

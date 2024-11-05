@@ -14,3 +14,7 @@ export interface BagyProduct extends Model, CategoryDefaultBelongs, BagyDimensio
     active: boolean
     variations: BagyVariation[]
 }
+
+export interface ProductBelongs {
+    product_id: number
+}

@@ -26,9 +26,11 @@ export class SettingRepositorySequelize implements SettingRepository {
     private interpret(filter: SettingFilter): FindOptions<ISetting> {
         const where: WhereOptions<ISetting> = {}
 
-        const { id } = filter
+        const { id, connection, active } = filter
 
         if (isNotEmpty(id)) where.id = id
+        if (isNotEmpty(connection)) where.connection = connection
+        if (isNotEmpty(active)) where.active = active
 
         return { where }
     }

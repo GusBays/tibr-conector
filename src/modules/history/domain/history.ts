@@ -1,24 +1,28 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
+import { SettingConnection } from '../../setting/domain/setting'
 
 export interface History extends Model, Timestamps {
     type: HistoryType
-    source: string
-    target: string
+    connection: SettingConnection
     started_at: string
     ended_at: string
-    extra: Record<string, any>
+    extra: {
+        success: number
+        errors: number
+    }
 }
 
 export enum HistoryType {
-    PRODUCT = 'product'
+    FETCH = 'fetch',
+    IMPORT = 'import'
 }
 
-export interface ProductHistory {
-    type: HistoryType.PRODUCT
-    extra: {
-        success: number
-        error: number
-    }
+export interface FetchHistory extends History {
+    type: HistoryType.FETCH
+}
+
+export interface ImportHistory extends History {
+    type: HistoryType.IMPORT
 }
 
 export interface HistoryFilter extends Partial<Model>, Filter {}
