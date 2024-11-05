@@ -1,5 +1,6 @@
 import { FindOptions, WhereOptions } from 'sequelize'
 import { injectable } from 'tsyringe'
+import { SequelizeHelper } from '../../../../../common/db/domain/sequelize/sequelize-helper'
 import { isNotEmpty } from '../../../../../common/helpers/helper'
 import { Setting as ISetting, SettingFilter } from '../../../domain/setting'
 import { SettingRepository } from '../../../domain/setting-repository'
@@ -10,6 +11,11 @@ export class SettingRepositorySequelize implements SettingRepository {
     async create(data: ISetting): Promise<ISetting> {
         const setting = await Setting.create(data)
         return setting.toJSON()
+    }
+
+    async getPaginate(filter: SettingFilter): Promise<Meta<ISetting>> {
+        const query = this.interpret(filter)
+        SequelizeHelper.setPaginationOn(query, filter)
     }
 
     async getOne(filter: SettingFilter): Promise<ISetting> {

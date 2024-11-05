@@ -2,6 +2,7 @@ import { Router } from '@koa/router'
 import { Context } from 'koa'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
+import { auth } from '../../../../../../common/http/domain/koa/middlewares/auth-koa'
 import { User, UserFilter } from '../../../../domain/user'
 import { UserService } from '../../../../domain/user-service'
 
@@ -10,11 +11,11 @@ const path = '/users'
 export async function userRoutesKoa(router: Router): Promise<void> {
     const { store, index, show, update, destroy, login } = userHandler()
 
-    router.post(path, store)
-    router.get(path, index)
-    router.get(`${path}/:id`, show)
-    router.put(`${path}/:id`, update)
-    router.delete(`${path}/:id`, destroy)
+    router.post(path, auth, store)
+    router.get(path, auth, index)
+    router.get(`${path}/:id`, auth, show)
+    router.put(`${path}/:id`, auth, update)
+    router.delete(`${path}/:id`, auth, destroy)
     router.post(`${path}/login`, login)
 }
 

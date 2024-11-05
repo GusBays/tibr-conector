@@ -2,30 +2,37 @@ import { Router } from '@koa/router'
 import { Context } from 'koa'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
+import { auth } from '../../../../../../common/http/domain/koa/middlewares/auth-koa'
 import { Setting, SettingFilter } from '../../../../domain/setting'
 import { SettingService } from '../../../../domain/setting-service'
 
 const path = '/settings'
 
 export async function settingRoutesKoa(router: Router): Promise<void> {
-    const { storeOrUpdate, getOne } = settingHandler()
+    const { store, show, update } = settingHandler()
 
-    router.post(path, storeOrUpdate)
-    router.get(path, getOne)
+    router.post(path, auth, store)
+    router.get(path, auth, show)
+    router.put(`${path}/:id`, auth, update)
 }
 
 function settingHandler() {
     const service = SettingService.getInstance()
 
-    const storeOrUpdate = async (ctx: Context): Promise<void> => {
-        const setting = await service.createOrUpdate(KoaHelper.extractBody<Setting>(ctx))
+    const store = async (ctx: Context): Promise<void> => {
+        const setting = await service.create(KoaHelper.extractBody<Setting>(ctx))
         KoaResponse.success(ctx, setting)
     }
 
-    const getOne = async (ctx: Context): Promise<void> => {
+    const show = async (ctx: Context): Promise<void> => {
         const setting = await service.getOne(KoaHelper.extractParams<SettingFilter>(ctx))
         KoaResponse.success(ctx, setting)
     }
 
-    return { storeOrUpdate, getOne }
+    const update = async (ctx: Context): Promise<void> => {
+        const setting = await service.update(KoaHelper.extractBody<Setting>(ctx))
+        KoaResponse.success(ctx, setting)
+    }
+
+    return { store, show, update }
 }

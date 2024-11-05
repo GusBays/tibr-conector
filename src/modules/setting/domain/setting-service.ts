@@ -1,4 +1,5 @@
 import { container, inject, injectable } from 'tsyringe'
+import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { isEmpty, throwIf } from '../../../common/helpers/helper'
 import { Setting, SettingFilter, SettingTypeEnum } from './setting'
@@ -12,19 +13,22 @@ export class SettingService {
         return container.resolve(SettingTypeEnum.SERVICE)
     }
 
-    async createOrUpdate(data: Setting): Promise<Setting> {
-        try {
-            const setting = await this.getOne(data)
-            return await this.repository.update({ ...setting, ...data })
-        } catch (e) {
-            return await this.repository.create(data)
-        }
+    async create(data: Setting): Promise<Setting> {
+        return await this.repository.create(data)
     }
 
     async getOne(filter: SettingFilter): Promise<Setting> {
         const setting = await this.repository.getOne(filter)
         throwIf(isEmpty(setting), NotFound, ['setting'])
         return setting
+    }
+
+    async getPaginate(filter: SettingFilter): Promise<Meta<Setting>> {
+        return await this.repository.getPaginate(filter)
+    }
+
+    async update(data: Setting): Promise<Setting> {
+        return await this.repository.update(data)
     }
 
     async getAll(filter: SettingFilter): Promise<Setting[]> {

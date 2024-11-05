@@ -2,6 +2,7 @@ import { Router } from '@koa/router'
 import { Context } from 'koa'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
+import { auth } from '../../../../../../common/http/domain/koa/middlewares/auth-koa'
 import { Resource, ResourceFilter } from '../../../../domain/resource'
 import { ResourceService } from '../../../../domain/resource-service'
 
@@ -10,9 +11,9 @@ const path = '/resources'
 export async function resourceRoutesKoa(router: Router): Promise<void> {
     const { index, show, update } = resourceHandler()
 
-    router.get(path, index)
-    router.get(`${path}/:id`, show)
-    router.put(`${path}/:id`, update)
+    router.get(path, auth, index)
+    router.get(`${path}/:id`, auth, show)
+    router.put(`${path}/:id`, auth, update)
 }
 
 function resourceHandler() {
