@@ -1,12 +1,12 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
-import { SettingConnection } from '../../setting/domain/setting'
+import { ConnectionApi } from '../../setting/domain/connection/connection'
 
 export interface Resource extends Model, Timestamps {
     type: ResourceType
-    source: SettingConnection
+    source: ConnectionApi
     source_id: number
     source_payload: Record<string, any>
-    target: SettingConnection
+    target: ConnectionApi
     target_id: number
     target_payload: Record<string, any>
 }

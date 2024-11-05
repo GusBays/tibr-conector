@@ -6,29 +6,22 @@ import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { HistoryType, ImportHistory } from '../../history/domain/history'
 import { ProductResource } from '../../resource/domain/product/product-resource'
 import { ResourceType } from '../../resource/domain/resource'
-import { AgisPricingSettingGroup, AgisSetting } from '../../setting/domain/agis/agis-setting'
-import { BagySetting } from '../../setting/domain/bagy/bagy-setting'
-import { SettingConnection } from '../../setting/domain/setting'
+import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
+import { ConnectionApi } from '../../setting/domain/connection/connection'
+import { PricingSettingGroup } from '../../setting/domain/setting'
 import { Importer } from './importer'
 
-export class BagyProductImporter extends Importer<BagySetting> {
-    private request: BagyRequest
-
-    constructor(setting: BagySetting) {
-        super(setting)
-        this.request = new BagyRequest(setting.config.token)
-    }
-
+export class BagyProductImporter extends Importer<BagyImporter> {
     async import(): Promise<void> {
-        const { token } = this.setting.config
+        const { token } = this.importer.config
 
         if (isEmpty(token)) return
 
-        const agis = (await this.settingService.getOne({ connection: SettingConnection.AGIS })) as AgisSetting
+        const request = new BagyRequest(this.importer.config.token)
 
         const history: ImportHistory = {
             id: null,
-            connection: this.setting.connection,
+            connection: this.importer.api,
             type: HistoryType.IMPORT,
             started_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             ended_at: null,
@@ -41,9 +34,8 @@ export class BagyProductImporter extends Importer<BagySetting> {
         }
 
         const resources = await this.resourceService.getAll({
-            source: SettingConnection.AGIS,
             type: ResourceType.PRODUCT,
-            target: SettingConnection.BAGY
+            target: ConnectionApi.BAGY
         })
 
         const toImportAndUpdate = async (resource: ProductResource) => {
@@ -66,7 +58,7 @@ export class BagyProductImporter extends Importer<BagySetting> {
                 product.category_ids = resource.config.category_ids ?? [resource.config.category_default_id]
                 product.feature_ids = resource.config.feature_ids
 
-                const toVariation = (group: AgisPricingSettingGroup) => {
+                const toVariation = (group: PricingSettingGroup) => {
                     const variation: BagyVariation = {
                         id: null,
                         product_id: resource.target_id,
@@ -89,13 +81,13 @@ export class BagyProductImporter extends Importer<BagySetting> {
 
                     return variation
                 }
-                product.variations = agis.config.pricing.groups.map(toVariation)
+                product.variations = this.setting.pricing.groups.map(toVariation)
             }
 
             try {
                 const res = isNotEmpty(resource.target_id)
-                    ? await this.request.updateProduct(product)
-                    : await this.request.createProduct(product)
+                    ? await request.updateProduct(product)
+                    : await request.createProduct(product)
 
                 await this.resourceService.update({ ...resource, target_id: res.id, target_payload: res })
                 history.extra.success++

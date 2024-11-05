@@ -1,35 +1,27 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
+import { AttributeValueBelongs } from '../../bagy/domain/attribute-value'
+import { Connection } from './connection/connection'
 
 export interface Setting extends Model, Timestamps {
-    connection: SettingConnection
-    type: SettingType
-    config: Record<string, any>
-    active: boolean
+    connections: Connection[]
+    pricing: SettingPricing
 }
 
-export interface FetcherSetting extends Setting {
-    type: SettingType.FETCHER
+export interface SettingBelongs {
+    setting_id: number
 }
 
-export interface ImporterSetting extends Setting {
-    type: SettingType.IMPORTER
+export interface SettingPricing {
+    name: string
+    groups: PricingSettingGroup[]
 }
 
-export enum SettingConnection {
-    AGIS = 'agis',
-    BAGY = 'bagy'
+export interface PricingSettingGroup extends AttributeValueBelongs {
+    name: string
+    markup: number
 }
 
-export enum SettingType {
-    FETCHER = 'fetcher',
-    IMPORTER = 'importer'
-}
-
-export interface SettingFilter extends Partial<Model>, Filter {
-    connection?: SettingConnection
-    active?: boolean
-    type?: SettingType
-}
+export interface SettingFilter extends Partial<Model>, Filter {}
 
 export enum SettingTypeEnum {
     SERVICE = 'SettingService',

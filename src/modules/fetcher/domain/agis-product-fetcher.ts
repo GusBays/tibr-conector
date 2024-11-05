@@ -9,18 +9,18 @@ import {
 import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
 import { ProductConfig, ProductResource } from '../../resource/domain/product/product-resource'
 import { Resource, ResourceType } from '../../resource/domain/resource'
-import { AgisSetting } from '../../setting/domain/agis/agis-setting'
-import { SettingConnection } from '../../setting/domain/setting'
+import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
+import { ConnectionApi } from '../../setting/domain/connection/connection'
 import { Fetcher } from './fetcher'
 
 type GetParams = (page: number, size: number) => AgisPaginationParams
-export class AgisProductFetcher extends Fetcher<AgisSetting> {
+export class AgisProductFetcher extends Fetcher<AgisFetcher> {
     protected async getData(): Promise<Resource[]> {
-        const { token } = this.setting.config
+        const { token } = this.fetcher.config
 
         if (isEmpty(token)) return
 
-        const request = new AgisRequest(this.setting.config.token)
+        const request = new AgisRequest(token)
         const pagination: GetParams = (page: number, size: number) => ({
             'searchCriteria[currentPage]': page,
             'searchCriteria[pageSize]': size
@@ -35,7 +35,7 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
         for (let i = 1; i <= pages; i++) {
             const { items } = await request.getProducts(pagination(i, 500))
 
-            const byAllowedToImport = (item: AgisProduct) => item.price >= this.setting.config.min_price
+            const byAllowedToImport = (item: AgisProduct) => item.price >= this.fetcher.config.min_price
             const toResource = async (item: AgisProduct) => resources.push(await this.toResource(item))
             await Promise.all(items.filter(byAllowedToImport).map(toResource))
         }
@@ -48,7 +48,7 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
 
         try {
             const row = await this.resourceService.getOne({
-                source: SettingConnection.AGIS,
+                source: ConnectionApi.AGIS,
                 source_id: item.id,
                 type: ResourceType.PRODUCT
             })
@@ -66,13 +66,13 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
 
             return {
                 name: resource?.config.name ?? item.name,
-                category_default_id: resource?.config.category_default_id ?? this.setting.config.category_default_id,
+                category_default_id: resource?.config.category_default_id ?? this.fetcher.config.category_default_id,
                 description: resource.config?.description ?? getCustomAttribute(AgisProductCustomAttributeCode.DESCRIPTION),
                 short_description:
                     resource.config?.short_description ??
                     getCustomAttribute(AgisProductCustomAttributeCode.SHORT_DESCRIPTION),
                 markup: resource?.config.markup ?? 1,
-                price: resource?.config.price ?? item.price * this.setting.config.markup,
+                price: resource?.config.price ?? item.price * this.fetcher.config.markup,
                 weight: resource?.config.weight ?? +getCustomAttribute(AgisProductCustomAttributeCode.GROSS_WEIGHT),
                 height: resource?.config.height ?? +getCustomAttribute(AgisProductCustomAttributeCode.HEIGHT),
                 width: resource?.config.width ?? +getCustomAttribute(AgisProductCustomAttributeCode.WIDTH),
@@ -93,11 +93,11 @@ export class AgisProductFetcher extends Fetcher<AgisSetting> {
         } else {
             resource = {
                 id: null,
-                source: SettingConnection.AGIS,
+                source: ConnectionApi.AGIS,
                 source_id: item.id,
                 source_payload: item,
                 type: ResourceType.PRODUCT,
-                target: SettingConnection.BAGY,
+                target: ConnectionApi.BAGY,
                 target_id: null,
                 target_payload: null,
                 config: getConfigBy(item),

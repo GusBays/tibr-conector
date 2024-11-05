@@ -1,5 +1,5 @@
 import { AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
-import { SettingConnection } from '../../../../../setting/domain/setting'
+import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
 import { Resource as IResource, ResourceType } from '../../../../domain/resource'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
@@ -10,7 +10,7 @@ export class Resource extends Model<IResource> {
 
     @AllowNull(false)
     @Column(DataType.STRING)
-    declare readonly source: SettingConnection
+    declare readonly source: ConnectionApi
 
     @AllowNull(false)
     @Column(DataType.INTEGER)
@@ -26,7 +26,7 @@ export class Resource extends Model<IResource> {
 
     @AllowNull
     @Column(DataType.STRING)
-    declare readonly target: SettingConnection
+    declare readonly target: ConnectionApi
 
     @AllowNull
     @Column(DataType.INTEGER)

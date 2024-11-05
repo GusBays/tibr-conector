@@ -1,7 +1,7 @@
-import { AgisSetting } from '../../setting/domain/agis/agis-setting'
-import { Setting, SettingConnection } from '../../setting/domain/setting'
-import { isFetcher } from '../../setting/domain/setting-helper'
+import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
+import { Connection, ConnectionApi } from '../../setting/domain/connection/connection'
+import { isFetcher } from '../../setting/domain/connection/connection-helper'
 
-export function isAgisFetcher(data: Setting): data is AgisSetting {
-    return isFetcher(data) && SettingConnection.AGIS === data.connection
+export function isAgisFetcher(data: Connection): data is AgisFetcher {
+    return isFetcher(data) && data.api === ConnectionApi.AGIS
 }

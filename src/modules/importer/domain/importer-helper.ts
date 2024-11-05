@@ -1,7 +1,7 @@
-import { BagySetting } from '../../setting/domain/bagy/bagy-setting'
-import { Setting, SettingConnection } from '../../setting/domain/setting'
-import { isImporter } from '../../setting/domain/setting-helper'
+import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
+import { Connection, ConnectionApi } from '../../setting/domain/connection/connection'
+import { isImporter } from '../../setting/domain/connection/connection-helper'
 
-export function isBagyImporter(data: Setting): data is BagySetting {
-    return isImporter(data) && data.connection === SettingConnection.BAGY
+export function isBagyImporter(data: Connection): data is BagyImporter {
+    return isImporter(data) && data.api === ConnectionApi.BAGY
 }

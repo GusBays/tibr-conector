@@ -1,9 +1,9 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
-import { SettingConnection } from '../../setting/domain/setting'
+import { ConnectionApi } from '../../setting/domain/connection/connection'
 
 export interface History extends Model, Timestamps {
     type: HistoryType
-    connection: SettingConnection
+    connection: ConnectionApi
     started_at: string
     ended_at: string
     extra: {

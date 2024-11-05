@@ -1,6 +1,7 @@
 import { Sequelize, SequelizeOptions } from 'sequelize-typescript'
 import { History } from '../../../../modules/history/infra/repositories/sequelize/models/history'
 import { Resource } from '../../../../modules/resource/infra/repositories/sequelize/models/resource'
+import { Connection } from '../../../../modules/setting/infra/repositories/sequelize/models/connection'
 import { Setting } from '../../../../modules/setting/infra/repositories/sequelize/models/setting'
 import { User } from '../../../../modules/user/infra/repositories/sequelize/models/user'
 
@@ -17,7 +18,7 @@ export async function sequelizeBootstrap(): Promise<void> {
     const sequelize = new Sequelize(mysql)
 
     await sequelize.authenticate()
-    sequelize.addModels([History, Resource, Setting, User])
+    sequelize.addModels([Connection, History, Resource, Setting, User])
 
     await sequelize.sync()
 }

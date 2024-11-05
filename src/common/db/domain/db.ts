@@ -9,7 +9,7 @@ export class DB {
         if ('test' === env) return await callback()
 
         const sequelize = container.resolve<Sequelize>(DbTypeEnum.CONNECTION)
-        const namespace = getNamespace('api-checkout')
+        const namespace = getNamespace('tibr-connector')
 
         const transaction = namespace.get('transaction')
         if (transaction) return await callback()

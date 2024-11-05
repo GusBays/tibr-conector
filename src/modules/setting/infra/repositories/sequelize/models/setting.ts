@@ -1,21 +1,14 @@
-import { AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
-import { Setting as ISetting, SettingConnection, SettingType } from '../../../../domain/setting'
+import { AllowNull, Column, DataType, HasMany, Model, Table } from 'sequelize-typescript'
+import { Connection as ISettingConnection } from '../../../../domain/connection/connection'
+import { Setting as ISetting, SettingPricing } from '../../../../domain/setting'
+import { Connection } from './connection'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
 export class Setting extends Model<ISetting> {
     @AllowNull(false)
-    @Column(DataType.STRING)
-    declare readonly connection: SettingConnection
-
-    @AllowNull(false)
-    @Column(DataType.STRING)
-    declare readonly type: SettingType
-
-    @AllowNull
     @Column(DataType.JSON)
-    declare readonly config: Record<string, any>
+    declare readonly pricing: SettingPricing
 
-    @AllowNull(false)
-    @Column(DataType.BOOLEAN)
-    declare readonly active: boolean
+    @HasMany(() => Connection)
+    declare readonly connections: ISettingConnection[]
 }

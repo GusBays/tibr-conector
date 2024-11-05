@@ -4,20 +4,21 @@ import { FetchHistory, HistoryType } from '../../history/domain/history'
 import { HistoryService } from '../../history/domain/history-service'
 import { Resource } from '../../resource/domain/resource'
 import { ResourceService } from '../../resource/domain/resource-service'
+import { FetcherConnection } from '../../setting/domain/connection/connection'
 import { Setting } from '../../setting/domain/setting'
 
-export abstract class Fetcher<S extends Setting = any> {
+export abstract class Fetcher<F extends FetcherConnection = any> {
     protected resourceService = ResourceService.getInstance()
     protected historyService = HistoryService.getInstance()
 
-    constructor(protected setting: S) {}
+    constructor(protected setting: Setting, protected fetcher: F) {}
 
     async fetch(): Promise<void> {
-        if (not(this.setting.active)) return
+        if (not(this.fetcher.active)) return
 
         const history: FetchHistory = {
             id: null,
-            connection: this.setting.connection,
+            connection: this.fetcher.api,
             type: HistoryType.FETCH,
             started_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             ended_at: null,
