@@ -10,5 +10,5 @@ export abstract class Importer<S extends Setting = any> {
 
     constructor(protected setting: S) {}
 
-    protected abstract import(): Promise<void>
+    abstract import(): Promise<void>
 }

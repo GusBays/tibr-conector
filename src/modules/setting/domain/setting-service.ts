@@ -26,4 +26,8 @@ export class SettingService {
         throwIf(isEmpty(setting), NotFound, ['setting'])
         return setting
     }
+
+    async getAll(filter: SettingFilter): Promise<Setting[]> {
+        return await this.repository.getAll(filter)
+    }
 }

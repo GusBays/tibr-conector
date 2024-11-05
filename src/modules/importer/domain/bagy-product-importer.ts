@@ -19,7 +19,7 @@ export class BagyProductImporter extends Importer<BagySetting> {
         this.request = new BagyRequest(setting.config.token)
     }
 
-    protected async import(): Promise<void> {
+    async import(): Promise<void> {
         const { token } = this.setting.config
 
         if (isEmpty(token)) return

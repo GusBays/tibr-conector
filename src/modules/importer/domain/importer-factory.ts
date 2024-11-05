@@ -6,7 +6,7 @@ import { Importer } from './importer'
 import { isBagyImporter } from './importer-helper'
 
 export class ImporterFactory {
-    getInstance(type: ResourceType, setting: ImporterSetting): Importer {
+    static getInstance(type: ResourceType, setting: ImporterSetting): Importer {
         switch (type) {
             case ResourceType.PRODUCT:
                 if (isBagyImporter(setting)) return new BagyProductImporter(setting)

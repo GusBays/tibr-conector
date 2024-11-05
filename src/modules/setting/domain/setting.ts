@@ -28,6 +28,7 @@ export enum SettingType {
 export interface SettingFilter extends Partial<Model>, Filter {
     connection?: SettingConnection
     active?: boolean
+    type?: SettingType
 }
 
 export enum SettingTypeEnum {

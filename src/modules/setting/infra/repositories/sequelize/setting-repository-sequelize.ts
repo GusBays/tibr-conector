@@ -23,6 +23,12 @@ export class SettingRepositorySequelize implements SettingRepository {
         return await this.getOne(filter)
     }
 
+    async getAll(filter: SettingFilter): Promise<ISetting[]> {
+        const settings = await Setting.findAll(this.interpret(filter))
+        const toJSON = (row: Setting) => row.toJSON()
+        return settings.map(toJSON)
+    }
+
     private interpret(filter: SettingFilter): FindOptions<ISetting> {
         const where: WhereOptions<ISetting> = {}
 
