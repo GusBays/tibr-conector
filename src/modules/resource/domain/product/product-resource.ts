@@ -7,6 +7,7 @@ export interface ProductResource extends Resource {
 
 export interface ProductConfig {
     name: string
+    short_description: string
     description: string
     markup: number
     price: number

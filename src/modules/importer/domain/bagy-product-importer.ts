@@ -1,6 +1,5 @@
 import { format } from 'date-fns'
 import { isEmpty, isNotEmpty, not } from '../../../common/helpers/helper'
-import { AgisProduct, AgisProductCustomAttribute, AgisProductCustomAttributeCode } from '../../agis/domain/product'
 import { BagyProduct } from '../../bagy/domain/product'
 import { BagyVariation } from '../../bagy/domain/variation'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
@@ -50,17 +49,7 @@ export class BagyProductImporter extends Importer<BagySetting> {
         const toImportAndUpdate = async (resource: ProductResource) => {
             if (not(resource.config.allowed_to_update)) return
 
-            const agisProduct: AgisProduct = resource.source_payload as AgisProduct
-
             const product: BagyProduct = {} as BagyProduct
-
-            const getCustomAttribute = (code: AgisProductCustomAttributeCode) => {
-                const byCode = (attribute: AgisProductCustomAttribute) => attribute.attribute_code === code
-                const customAttribute = agisProduct.custom_attributes.find(byCode)
-
-                if (isEmpty(customAttribute)) return null
-                else customAttribute.value
-            }
 
             if (resource.config.partial_update && isNotEmpty(resource.target_payload)) {
                 const toBalance = (variation: BagyVariation) =>
@@ -70,8 +59,8 @@ export class BagyProductImporter extends Importer<BagySetting> {
                 product.name = resource.config.name
                 product.description = resource.config.description
                 product.active = resource.config.active
-                product.short_description = getCustomAttribute(AgisProductCustomAttributeCode.SHORT_DESCRIPTION)
-                product.external_id = agisProduct.id.toString()
+                product.short_description = resource.config.short_description
+                product.external_id = resource.source_id.toString()
                 product.ncm = resource.config.ncm
 
                 const toVariation = (group: AgisPricingSettingGroup) => {
