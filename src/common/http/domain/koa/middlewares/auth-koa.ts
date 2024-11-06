@@ -1,5 +1,6 @@
 import { verify } from 'jsonwebtoken'
 import { Context, Next } from 'koa'
+import { UserType } from '../../../../../modules/user/domain/user'
 import { UserService } from '../../../../../modules/user/domain/user-service'
 import { Unauthenticated } from '../../../../exceptions/unauthenticated'
 import { isEmpty, throwIf } from '../../../../helpers/helper'
@@ -15,6 +16,9 @@ export async function auth(ctx: Context, next: Next): Promise<void> {
 
     try {
         const authorization = verify(token, key) as Record<string, any>
+
+        if (UserType.SUPER === authorization.type) return next()
+
         const user = await UserService.getInstance().getOne({ email: authorization.email, type: authorization.type })
         Object.assign(ctx, { user })
     } catch (e) {

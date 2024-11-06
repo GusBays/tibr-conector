@@ -3,7 +3,6 @@ import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
 export interface User extends Model, Timestamps {
     first_name: string
     last_name: string
-    name: string
     email: string
     token: string
     password: string
@@ -17,7 +16,8 @@ export interface UserFilter extends Partial<Model>, Filter {
 
 export enum UserType {
     ADMIN = 'admin',
-    OWNER = 'owner'
+    OWNER = 'owner',
+    SUPER = 'super'
 }
 
 export enum UserTypeEnum {

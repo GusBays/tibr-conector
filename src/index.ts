@@ -6,6 +6,7 @@ import bodyParser from 'koa-bodyparser'
 import { schedule } from 'node-cron'
 import 'reflect-metadata'
 import { sequelizeBootstrap } from './common/db/infra/bootstraps/sequelize-bootstrap'
+import { errorHandler } from './common/http/domain/koa/middlewares/error-handler-koa'
 import { FetcherFactory } from './modules/fetcher/domain/fetcher-factory'
 import { historyBootstrap } from './modules/history/infra/bootstraps/history-bootstrap'
 import { historyRoutesKoa } from './modules/history/infra/http/koa/routes/history-routes-koa'
@@ -44,6 +45,7 @@ async function run(): Promise<void> {
     const app = new Koa()
     app.use(bodyParser())
         .use(async (ctx, next) => await namespace.runAndReturn(async () => await next()))
+        .use(errorHandler)
         .use(router.routes())
         .use(router.allowedMethods())
         .listen(4001, () => console.log('Running on 4001'))

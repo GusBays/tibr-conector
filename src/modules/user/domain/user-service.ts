@@ -4,8 +4,9 @@ import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { Unauthenticated } from '../../../common/exceptions/unauthenticated'
+import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, throwIf } from '../../../common/helpers/helper'
-import { User, UserFilter, UserTypeEnum } from './user'
+import { User, UserFilter, UserType, UserTypeEnum } from './user'
 import { UserRepository } from './user-repository'
 
 @injectable()
@@ -20,7 +21,7 @@ export class UserService {
         const key = process.env.APP_KEY
 
         data.token = sign({ email: data.email, type: data.type }, key)
-        data.password = await hash(data.password, key)
+        data.password = await hash(data.password, 10)
 
         return await this.repository.create(data)
     }
@@ -44,6 +45,9 @@ export class UserService {
     }
 
     async delete(filter: UserFilter): Promise<void> {
+        const user = await this.getOne(filter)
+        throwIf(UserType.OWNER === user.type, UnprocessableEntity, [{ owner: 'cannot_delete_owner' }])
+
         return await this.repository.delete(filter)
     }
 
