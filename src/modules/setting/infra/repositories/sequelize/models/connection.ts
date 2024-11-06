@@ -24,5 +24,6 @@ export class Connection extends Model<IConnection> {
 
     @AllowNull(false)
     @Default(1)
+    @Column(DataType.BOOLEAN)
     declare readonly active: boolean
 }

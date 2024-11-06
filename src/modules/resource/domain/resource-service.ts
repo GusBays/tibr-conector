@@ -7,7 +7,7 @@ import { ResourceRepository } from './resource-repository'
 
 @injectable()
 export class ResourceService {
-    constructor(@inject(ResourceTypeEnum.SERVICE) private readonly repository: ResourceRepository) {}
+    constructor(@inject(ResourceTypeEnum.REPOSITORY) private readonly repository: ResourceRepository) {}
 
     static getInstance(): ResourceService {
         return container.resolve(ResourceTypeEnum.SERVICE)
