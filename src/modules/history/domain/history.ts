@@ -7,7 +7,8 @@ export interface History extends Model, Timestamps {
     started_at: string
     ended_at: string
     extra: {
-        success: number
+        created: number
+        updated: number
         errors: number
     }
 }

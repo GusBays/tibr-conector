@@ -1,4 +1,4 @@
-import { isEmpty, isNotEmpty } from '../../../common/helpers/helper'
+import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { AgisPaginationParams } from '../../agis/domain/pagination'
 import {
     AgisProduct,
@@ -10,12 +10,12 @@ import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
 import { ProductConfig, ProductResource } from '../../resource/domain/product/product-resource'
 import { Resource, ResourceType } from '../../resource/domain/resource'
 import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
-import { ConnectionApi } from '../../setting/domain/connection/connection'
+import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
 import { Fetcher } from './fetcher'
 
 type GetParams = (page: number, size: number) => AgisPaginationParams
 export class AgisProductFetcher extends Fetcher<AgisFetcher> {
-    protected async getData(): Promise<Resource[]> {
+    protected async fetchDataBy(targets: ImporterConnection[]): Promise<Resource[]> {
         const { token } = this.fetcher.config
 
         if (isEmpty(token)) return
@@ -28,84 +28,95 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
 
         const { total_count } = await request.getProducts(pagination(1, 1))
 
-        const pages = Math.ceil(total_count / 500)
+        const perPage = 50
+        const pages = Math.ceil(total_count / perPage)
 
         const resources: Resource[] = []
 
         for (let i = 1; i <= pages; i++) {
-            const { items } = await request.getProducts(pagination(i, 500))
+            const { items } = await request.getProducts(pagination(i, perPage))
 
-            const byAllowedToImport = (item: AgisProduct) => item.price >= this.fetcher.config.min_price
-            const toResource = async (item: AgisProduct) => resources.push(await this.toResource(item))
-            await Promise.all(items.filter(byAllowedToImport).map(toResource))
+            const toResource = async (target: ImporterConnection) => await this.toResource(target, items)
+            const result = await Promise.all(targets.map(toResource))
+
+            resources.push(...result.flat())
         }
 
         return resources
     }
 
-    private async toResource(item: AgisProduct): Promise<Resource> {
-        let resource: ProductResource
-
-        try {
-            const row = await this.resourceService.getOne({
-                source: ConnectionApi.AGIS,
-                source_id: item.id,
-                type: ResourceType.PRODUCT
-            })
-            resource = row as ProductResource
-        } catch (e) {}
-
-        const getConfigBy = (item: AgisProduct): ProductConfig => {
-            const getCustomAttribute = (code: AgisProductCustomAttributeCode) => {
-                const byCode = (attribute: AgisProductCustomAttribute) => attribute.attribute_code === code
-                const customAttribute = item.custom_attributes.find(byCode)
-                return isNotEmpty(customAttribute) && isNotEmpty(customAttribute.value) ? customAttribute.value : null
-            }
-
-            const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
+    private async toResource(target: ImporterConnection, items: AgisProduct[]): Promise<Resource[]> {
+        const toFormat = async (item: AgisProduct): Promise<ProductResource> => {
+            const resource = await this.getResourceBy<ProductResource>(item.id, target.api, ResourceType.PRODUCT)
 
             return {
-                name: resource?.config.name ?? item.name,
-                category_default_id: resource?.config.category_default_id ?? this.fetcher.config.category_default_id,
-                description: resource.config?.description ?? getCustomAttribute(AgisProductCustomAttributeCode.DESCRIPTION),
-                short_description:
-                    resource.config?.short_description ??
-                    getCustomAttribute(AgisProductCustomAttributeCode.SHORT_DESCRIPTION),
-                markup: resource?.config.markup ?? 1,
-                price: resource?.config.price ?? item.price * this.fetcher.config.markup,
-                weight: resource?.config.weight ?? +getCustomAttribute(AgisProductCustomAttributeCode.GROSS_WEIGHT),
-                height: resource?.config.height ?? +getCustomAttribute(AgisProductCustomAttributeCode.HEIGHT),
-                width: resource?.config.width ?? +getCustomAttribute(AgisProductCustomAttributeCode.WIDTH),
-                depth: resource?.config.depth ?? +getCustomAttribute(AgisProductCustomAttributeCode.DEPTH),
-                balance: resource?.config.balance ?? item.stock.reduce(toSumBalance, 0),
-                reference: resource?.config.reference,
-                gtin: resource?.config.gtin ?? +getCustomAttribute(AgisProductCustomAttributeCode.GTIN),
-                ncm: resource?.config.ncm ?? getCustomAttribute(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION),
-                active: resource?.config.active ?? true,
-                partial_update: resource?.config.partial_update ?? false,
-                allowed_to_update: resource?.config.allowed_to_update ?? true
-            }
-        }
-
-        if (isNotEmpty(resource)) {
-            resource.source_payload = item
-            resource.config = getConfigBy(item)
-        } else {
-            resource = {
-                id: null,
+                id: resource?.id,
                 source: ConnectionApi.AGIS,
                 source_id: item.id,
                 source_payload: item,
                 type: ResourceType.PRODUCT,
-                target: ConnectionApi.BAGY,
-                target_id: null,
-                target_payload: null,
-                config: getConfigBy(item),
-                created_at: null,
-                updated_at: null
+                target: target.api,
+                target_id: resource?.target_id,
+                target_payload: resource?.target_payload,
+                config: this.getConfigBy(item, resource),
+                created_at: undefined,
+                updated_at: undefined
             }
         }
+        return await Promise.all(items.map(toFormat))
+    }
 
-        return resource
+    private getConfigBy(item: AgisProduct, resource: ProductResource): ProductConfig {
+        const getFromConfig = (key: keyof ProductConfig, defaultValue: any = null) => {
+            if (isEmpty(resource?.config)) return defaultValue
+
+            const { config } = resource
+            const value = config[key]
+
+            return isUndefined(value) ? defaultValue : value
+        }
+
+        const getCustomAttributeBy = (code: AgisProductCustomAttributeCode, item: AgisProduct) => {
+            const byCode = (attribute: AgisProductCustomAttribute) => attribute.attribute_code === code
+            const customAttribute = item.custom_attributes.find(byCode)
+            return isNotEmpty(customAttribute) && isNotEmpty(customAttribute.value) ? customAttribute.value : null
+        }
+
+        const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
+        const getPrice = () => {
+            const price = getFromConfig('price', item.price)
+
+            if (isNotEmpty(price)) return price
+
+            const markup = getFromConfig('markup', this.fetcher.config.markup)
+
+            return item.price * markup
+        }
+
+        return {
+            name: getFromConfig('name', item.name),
+            category_default_id: getFromConfig('category_default_id', this.fetcher.config.category_default_id),
+            description: getFromConfig(
+                'description',
+                getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION, item)
+            ),
+            short_description: getFromConfig(
+                'short_description',
+                getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION, item)
+            ),
+            markup: getFromConfig('markup', this.fetcher.config.markup),
+            price: getPrice(),
+            weight: getFromConfig('weight', +getCustomAttributeBy(AgisProductCustomAttributeCode.GROSS_WEIGHT, item)),
+            height: getFromConfig('height', +getCustomAttributeBy(AgisProductCustomAttributeCode.HEIGHT, item)),
+            width: getFromConfig('width', +getCustomAttributeBy(AgisProductCustomAttributeCode.WIDTH, item)),
+            depth: getFromConfig('depth', +getCustomAttributeBy(AgisProductCustomAttributeCode.DEPTH, item)),
+            balance: getFromConfig('balance', item.stock.reduce(toSumBalance, 0)),
+            reference: getFromConfig('reference', item.sku),
+            gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN, item)),
+            ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION, item)),
+            active: getFromConfig('active', true),
+            partial_update: getFromConfig('partial_update', false),
+            allowed_to_import: getFromConfig('allowed_to_import', true)
+        }
     }
 }

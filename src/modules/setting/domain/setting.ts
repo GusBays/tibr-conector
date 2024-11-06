@@ -19,6 +19,7 @@ export interface SettingPricing {
 export interface PricingSettingGroup extends AttributeValueBelongs {
     name: string
     markup: number
+    position: number
 }
 
 export interface SettingFilter extends Partial<Model>, Filter {}

@@ -17,6 +17,7 @@ export interface ResourceFilter extends Partial<Model>, Filter {
     target?: string
     target_id?: number
     type?: ResourceType
+    updated_after?: string
 }
 
 export enum ResourceType {

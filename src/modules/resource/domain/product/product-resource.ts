@@ -22,7 +22,7 @@ export interface ProductConfig {
     ncm: string
     active: boolean
     partial_update: boolean
-    allowed_to_update: boolean
+    allowed_to_import: boolean
     category_ids?: number[]
     feature_ids?: number[]
 }

@@ -20,10 +20,6 @@ export class BagyRequest extends AxiosRequest {
         return await this.post<BagyProduct, BagyProduct>('/products', data)
     }
 
-    async getProduct(id: number): Promise<BagyProduct> {
-        return await this.get<BagyProduct>(`/products/${id}`)
-    }
-
     async updateProduct(data: BagyProduct): Promise<BagyProduct> {
         return await this.put<BagyProduct, BagyProduct>(`/products/${data.id}`, data)
     }
