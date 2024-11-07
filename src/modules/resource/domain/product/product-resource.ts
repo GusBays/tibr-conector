@@ -5,7 +5,7 @@ export interface ProductResource extends Resource {
     config: ProductConfig
 }
 
-export interface ProductConfig {
+export interface ProductConfig extends Dimensions {
     category_default_id: number
     name: string
     short_description: string
@@ -25,4 +25,11 @@ export interface ProductConfig {
     allowed_to_import: boolean
     category_ids?: number[]
     feature_ids?: number[]
+}
+
+export interface Dimensions {
+    width: number
+    height: number
+    depth: number
+    weight: number
 }

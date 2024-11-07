@@ -1,8 +1,8 @@
 import { Model, Timestamps } from '../../../common/contracts/contracts'
 import { AttributeValueBelongs, AttributeValueSecondaryBelongs } from './attribute-value'
+import { BagyPrice } from './bagy-price'
+import { ProductBelongs } from './bagy-product'
 import { ColorBelongs } from './color'
-import { BagyPrice } from './price'
-import { ProductBelongs } from './product'
 
 export interface BagyVariation
     extends Model,

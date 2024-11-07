@@ -1,10 +1,10 @@
 import { Model, Timestamps } from '../../../common/contracts/contracts'
+import { Dimensions } from '../../resource/domain/product/product-resource'
+import { BagyPrice } from './bagy-price'
+import { BagyVariation } from './bagy-variation'
 import { CategoryDefaultBelongs } from './category'
-import { BagyDimensions } from './dimentions'
-import { BagyPrice } from './price'
-import { BagyVariation } from './variation'
 
-export interface BagyProduct extends Model, CategoryDefaultBelongs, BagyDimensions, BagyPrice, Timestamps {
+export interface BagyProduct extends Model, CategoryDefaultBelongs, Dimensions, BagyPrice, Timestamps {
     name: string
     slug: string
     external_id: string

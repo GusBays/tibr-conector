@@ -1,13 +1,14 @@
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
-import { AgisPaginationParams } from '../../agis/domain/pagination'
+import { toFloat } from '../../agis/domain/agis-helper'
+import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
 import {
     AgisProduct,
     AgisProductCustomAttribute,
     AgisProductCustomAttributeCode,
     AgisProductStock
-} from '../../agis/domain/product'
+} from '../../agis/domain/agis-product'
 import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
-import { ProductConfig, ProductResource } from '../../resource/domain/product/product-resource'
+import { Dimensions, ProductConfig, ProductResource } from '../../resource/domain/product/product-resource'
 import { Resource, ResourceType } from '../../resource/domain/resource'
 import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
 import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
@@ -67,53 +68,70 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
     }
 
     private getConfigBy(item: AgisProduct, resource: ProductResource): ProductConfig {
-        const getFromConfig = (key: keyof ProductConfig, defaultValue: any = null) => {
+        const getFromConfig = <T = any>(key: keyof ProductConfig, defaultValue: T = null) => {
             if (isEmpty(resource?.config)) return defaultValue
 
             const { config } = resource
             const value = config[key]
 
-            return isUndefined(value) ? defaultValue : value
+            return isUndefined(value) ? defaultValue : (value as T)
         }
 
-        const getCustomAttributeBy = (code: AgisProductCustomAttributeCode, item: AgisProduct) => {
+        const getCustomAttributeBy = (code: AgisProductCustomAttributeCode) => {
             const byCode = (attribute: AgisProductCustomAttribute) => attribute.attribute_code === code
             const customAttribute = item.custom_attributes.find(byCode)
             return isNotEmpty(customAttribute) && isNotEmpty(customAttribute.value) ? customAttribute.value : null
         }
 
-        const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
-        const getPrice = () => {
-            const price = getFromConfig('price', item.price)
+        const getPrice = (): { price: number } => {
+            const price = getFromConfig('price')
 
-            if (isNotEmpty(price)) return price
+            if (isNotEmpty(price)) return { price }
 
-            const markup = getFromConfig('markup', this.fetcher.config.markup)
+            const toSumPrice = (current: number, stock: AgisProductStock) => stock.price + current
+            const itemPrice = item.stock.reduce(toSumPrice, 0)
 
-            return item.price * markup
+            return { price: itemPrice }
+        }
+
+        const getDimensions = (): Dimensions => {
+            const [weight, height, width, depth] = [
+                getFromConfig('weight', getCustomAttributeBy(AgisProductCustomAttributeCode.GROSS_WEIGHT)),
+                getFromConfig('height', getCustomAttributeBy(AgisProductCustomAttributeCode.HEIGHT)),
+                getFromConfig('width', getCustomAttributeBy(AgisProductCustomAttributeCode.WIDTH)),
+                getFromConfig('depth', getCustomAttributeBy(AgisProductCustomAttributeCode.DEPTH))
+            ]
+
+            return {
+                width: toFloat(width),
+                height: toFloat(height),
+                depth: toFloat(depth),
+                weight: toFloat(weight)
+            }
+        }
+
+        const getBalance = (): { balance: number } => {
+            const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
+            const balance = getFromConfig('balance', item.stock.reduce(toSumBalance, 0))
+
+            return { balance }
         }
 
         return {
             name: getFromConfig('name', item.name),
             category_default_id: getFromConfig('category_default_id', this.fetcher.config.category_default_id),
-            description: getFromConfig(
-                'description',
-                getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION, item)
-            ),
+            description: getFromConfig('description', getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION)),
             short_description: getFromConfig(
                 'short_description',
-                getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION, item)
+                getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION)
             ),
-            markup: getFromConfig('markup', this.fetcher.config.markup),
-            price: getPrice(),
-            weight: getFromConfig('weight', +getCustomAttributeBy(AgisProductCustomAttributeCode.GROSS_WEIGHT, item)),
-            height: getFromConfig('height', +getCustomAttributeBy(AgisProductCustomAttributeCode.HEIGHT, item)),
-            width: getFromConfig('width', +getCustomAttributeBy(AgisProductCustomAttributeCode.WIDTH, item)),
-            depth: getFromConfig('depth', +getCustomAttributeBy(AgisProductCustomAttributeCode.DEPTH, item)),
-            balance: getFromConfig('balance', item.stock.reduce(toSumBalance, 0)),
+            markup: getFromConfig('markup', undefined),
+            ...getPrice(),
+            ...getDimensions(),
+            ...getBalance(),
             reference: getFromConfig('reference', item.sku),
-            gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN, item)),
-            ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION, item)),
+            gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN)),
+            ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
             partial_update: getFromConfig('partial_update', false),
             allowed_to_import: getFromConfig('allowed_to_import', true)

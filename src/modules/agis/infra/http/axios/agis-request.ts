@@ -1,7 +1,7 @@
 import { Agent } from 'https'
 import { AxiosRequest } from '../../../../../common/http/domain/axios/axios-request'
-import { AgisPagination, AgisPaginationParams } from '../../../domain/pagination'
-import { AgisProduct } from '../../../domain/product'
+import { AgisPagination, AgisPaginationParams } from '../../../domain/agis-pagination'
+import { AgisProduct } from '../../../domain/agis-product'
 
 export class AgisRequest extends AxiosRequest {
     constructor(token: string) {

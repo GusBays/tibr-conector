@@ -1,6 +1,6 @@
 import { Agent } from 'https'
 import { AxiosRequest } from '../../../../../common/http/domain/axios/axios-request'
-import { BagyProduct } from '../../../domain/product'
+import { BagyProduct } from '../../../domain/bagy-product'
 
 export class BagyRequest extends AxiosRequest {
     constructor(token: string) {
