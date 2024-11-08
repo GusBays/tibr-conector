@@ -5,6 +5,7 @@ import { HistoryService } from '../../history/domain/history-service'
 import { Importer } from '../../importer/domain/importer'
 import { ImporterFactory } from '../../importer/domain/importer-factory'
 import { Resource, ResourceFilter, ResourceType } from '../../resource/domain/resource'
+import { isProductResource } from '../../resource/domain/resource-helper'
 import { ResourceService } from '../../resource/domain/resource-service'
 import { Connection, ConnectionApi, FetcherConnection, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
@@ -34,17 +35,17 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         if (isEmpty(resources)) return
 
         const importToTarget = async (resource: Resource) => {
-            const importer = this.getImporterBy(resource, targets)
-
-            if (isEmpty(importer)) return
-
+            const allowedToImport = false === isProductResource(resource) || resource.config.allowed_to_import
             const isCreation = isEmpty(resource.target_id)
 
             try {
-                await importer.importOne(resource)
+                if (allowedToImport) {
+                    const importer = this.getImporterBy(resource, targets)
+                    await importer.importOne(resource)
 
-                if (isCreation) created++
-                else updated++
+                    if (isCreation) created++
+                    else updated++
+                }
 
                 isEmpty(resource.id)
                     ? await this.resourceService.create(resource)
@@ -78,7 +79,7 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         } catch (e) {}
     }
 
-    private getImporterBy(resource: Resource, activeImporters: Connection[]): Importer | null {
+    private getImporterBy(resource: Resource, activeImporters: Connection[]): Importer {
         const byApi = (connection: { api: ConnectionApi }) => connection.api === resource.target
         let importer = this.importers.find(byApi)
 

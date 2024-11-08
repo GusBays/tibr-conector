@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios'
+import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
 import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
@@ -27,17 +29,32 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             'searchCriteria[pageSize]': size
         })
 
-        const { total_count } = await request.getProducts(pagination(1, 1))
+        let total: number
+
+        try {
+            const res = await request.getProducts(pagination(1, 1))
+            total = res.total_count
+        } catch (e) {
+            if (e instanceof AxiosError && e.response?.status === 401) {
+                throw new UnprocessableEntity('agis', { token: 'unauthorized' })
+            } else throw e
+        }
 
         const perPage = 50
-        const pages = Math.ceil(total_count / perPage)
+        const pages = Math.ceil(total / perPage)
 
         const resources: Resource[] = []
 
         for (let i = 1; i <= pages; i++) {
             const { items } = await request.getProducts(pagination(i, perPage))
 
-            const toResource = async (target: ImporterConnection) => await this.toResource(target, items)
+            const byMinPrice = (item: AgisProduct) => {
+                const price = this.getPriceOf(item)
+                return this.fetcher.config.min_price <= price
+            }
+            const allowed = items.filter(byMinPrice)
+
+            const toResource = async (target: ImporterConnection) => await this.toResource(target, allowed)
             const fetched = await Promise.all(targets.map(toResource))
 
             resources.push(...fetched.flat())
@@ -88,10 +105,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
 
             if (isNotEmpty(price)) return { price }
 
-            const toSumPrice = (current: number, stock: AgisProductStock) => stock.price + current
-            const itemPrice = item.stock.reduce(toSumPrice, 0)
-
-            return { price: itemPrice }
+            return { price: this.getPriceOf(item) }
         }
 
         const getDimensions = (): Dimensions => {
@@ -136,5 +150,10 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             partial_update: getFromConfig('partial_update', false),
             allowed_to_import: getFromConfig('allowed_to_import', true)
         }
+    }
+
+    private getPriceOf(item: AgisProduct): number {
+        const toSumPrice = (current: number, stock: AgisProductStock) => stock.price + current
+        return item.stock.reduce(toSumPrice, 0)
     }
 }
