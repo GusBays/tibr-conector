@@ -50,7 +50,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
 
             const byMinPrice = (item: AgisProduct) => {
                 const price = this.getPriceOf(item)
-                return this.fetcher.config.min_price <= price
+                return price >= this.fetcher.config.min_price
             }
             const allowed = items.filter(byMinPrice)
 
