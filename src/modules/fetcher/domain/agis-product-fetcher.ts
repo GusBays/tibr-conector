@@ -38,15 +38,15 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             const { items } = await request.getProducts(pagination(i, perPage))
 
             const toResource = async (target: ImporterConnection) => await this.toResource(target, items)
-            const result = await Promise.all(targets.map(toResource))
+            const fetched = await Promise.all(targets.map(toResource))
 
-            resources.push(...result.flat())
+            resources.push(...fetched.flat())
         }
 
         return resources
     }
 
-    private async toResource(target: ImporterConnection, items: AgisProduct[]): Promise<Resource[]> {
+    private async toResource(target: ImporterConnection, items: AgisProduct[]): Promise<ProductResource[]> {
         const toFormat = async (item: AgisProduct): Promise<ProductResource> => {
             const resource = await this.getResourceBy<ProductResource>(item.id, target.api, ResourceType.PRODUCT)
 

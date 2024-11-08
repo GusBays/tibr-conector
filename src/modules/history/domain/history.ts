@@ -6,11 +6,13 @@ export interface History extends Model, Timestamps {
     connection: ConnectionApi
     started_at: string
     ended_at: string
-    extra: {
-        created: number
-        updated: number
-        errors: number
-    }
+    extra: HistoryExtra
+}
+
+export interface HistoryExtra {
+    created: number
+    updated: number
+    errors: number
 }
 
 export enum HistoryType {

@@ -1,77 +1,43 @@
-import { format } from 'date-fns'
-import { isEmpty, isNotEmpty, not } from '../../../common/helpers/helper'
+import { isNotEmpty } from '../../../common/helpers/helper'
 import { BagyProduct } from '../../bagy/domain/bagy-product'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { isAgisFetcher } from '../../fetcher/domain/fetcher-helper'
-import { HistoryType, ImportHistory } from '../../history/domain/history'
 import { ProductResource } from '../../resource/domain/product/product-resource'
-import { ResourceType } from '../../resource/domain/resource'
 import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
-import { Connection, FetcherConnection } from '../../setting/domain/connection/connection'
+import { Connection, ConnectionApi, FetcherConnection } from '../../setting/domain/connection/connection'
 import { isFetcher } from '../../setting/domain/connection/connection-helper'
-import { PricingSettingGroup } from '../../setting/domain/setting'
+import { PricingSettingGroup, Setting } from '../../setting/domain/setting'
 import { Importer } from './importer'
 
 export class BagyProductImporter extends Importer<BagyImporter> {
-    async import(): Promise<void> {
-        const { active, config } = this.importer
+    readonly api: ConnectionApi.BAGY
 
-        if (not(active) || isEmpty(config.token)) return
+    private request: BagyRequest
 
-        const request = new BagyRequest(config.token)
-
-        const history: ImportHistory = {
-            id: null,
-            connection: this.importer.api,
-            type: HistoryType.IMPORT,
-            started_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            ended_at: null,
-            extra: {
-                created: 0,
-                updated: 0,
-                errors: 0
-            },
-            created_at: null,
-            updated_at: null
-        }
-
-        const resources = await this.getResourcesBy<ProductResource>(ResourceType.PRODUCT)
-
-        const byAllowedToImport = (resource: ProductResource) => resource.config.allowed_to_import
-        const allowed = resources.filter(byAllowedToImport)
-
-        if (isEmpty(allowed)) return
-
-        const toImportAndUpdate = async (resource: ProductResource) => {
-            const byApi = (connection: Connection) => connection.api === resource.source && isFetcher(connection)
-            const fetcher = this.setting.connections.find(byApi)
-
-            const product = this.toBagyProduct(resource, fetcher as FetcherConnection)
-
-            try {
-                if (isNotEmpty(product.id)) {
-                    const target_payload = await request.updateProduct(product)
-                    Object.assign(resource, { target_payload })
-                    history.extra.updated++
-                } else {
-                    const res = await request.createProduct(product)
-                    Object.assign(resource, { target_id: res.id, target_payload: res })
-                    history.extra.created++
-                }
-
-                await this.resourceService.update(resource)
-            } catch (e) {
-                history.extra.errors++
-            }
-        }
-        await Promise.all(allowed.map(toImportAndUpdate))
-
-        history.ended_at = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
-        await this.historyService.create(history)
+    constructor(setting: Setting, importer: BagyImporter) {
+        super(setting, importer)
+        this.request = new BagyRequest(importer.config.token)
     }
 
-    private toBagyProduct(resource: ProductResource, fetcher: FetcherConnection) {
+    async importOne(resource: ProductResource): Promise<ProductResource> {
+        const product = this.toBagyProduct(resource)
+
+        if (isNotEmpty(product.id)) {
+            const target_payload = await this.request.updateProduct(product)
+            Object.assign(resource, { target_payload })
+        } else {
+            const res = await this.request.createProduct(product)
+            Object.assign(resource, { target_id: res.id, target_payload: res })
+        }
+
+        return resource
+    }
+
+    private toBagyProduct(resource: ProductResource): BagyProduct {
+        const byApi = (connection: Connection) => connection.api === resource.source && isFetcher(connection)
+        const fetcher = this.setting.connections.find(byApi) as FetcherConnection
+
         const product: BagyProduct = {
             id: resource.target_id
         } as BagyProduct

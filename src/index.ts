@@ -10,12 +10,11 @@ import { errorHandler } from './common/http/domain/koa/middlewares/error-handler
 import { FetcherFactory } from './modules/fetcher/domain/fetcher-factory'
 import { historyBootstrap } from './modules/history/infra/bootstraps/history-bootstrap'
 import { historyRoutesKoa } from './modules/history/infra/http/koa/routes/history-routes-koa'
-import { ImporterFactory } from './modules/importer/domain/importer-factory'
 import { ResourceType } from './modules/resource/domain/resource'
 import { resourceBootstrap } from './modules/resource/infra/bootstraps/resource-bootstrap'
 import { resourceRoutesKoa } from './modules/resource/infra/http/koa/routes/resource-routes-koa'
-import { Connection, FetcherConnection, ImporterConnection } from './modules/setting/domain/connection/connection'
-import { isFetcher, isImporter } from './modules/setting/domain/connection/connection-helper'
+import { Connection, FetcherConnection } from './modules/setting/domain/connection/connection'
+import { isFetcher } from './modules/setting/domain/connection/connection-helper'
 import { SettingService } from './modules/setting/domain/setting-service'
 import { connectionBootstrap } from './modules/setting/infra/bootstraps/connection-bootstrap'
 import { settingBootstrap } from './modules/setting/infra/bootstraps/setting-bootstrap'
@@ -50,7 +49,7 @@ async function run(): Promise<void> {
         .use(router.allowedMethods())
         .listen(4001, () => console.log('Running on 4001'))
 
-    const fetchProductsJob = async (): Promise<void> => {
+    const fetchAndImportProductsJob = async (): Promise<void> => {
         const setting = await SettingService.getInstance().getOne({})
 
         const byFetcher = (connection: Connection) => isFetcher(connection)
@@ -58,17 +57,7 @@ async function run(): Promise<void> {
             await FetcherFactory.getInstance(ResourceType.PRODUCT, setting, fetcher).fetch()
         await Promise.all(setting.connections.filter(byFetcher).map(toFetch))
     }
-    schedule('0 0 * * *', fetchProductsJob)
-
-    const importProductsJob = async (): Promise<void> => {
-        const setting = await SettingService.getInstance().getOne({})
-
-        const byImporter = (connection: Connection) => isImporter(connection)
-        const toImport = async (importer: ImporterConnection) =>
-            await ImporterFactory.getInstance(ResourceType.PRODUCT, setting, importer).import()
-        await Promise.all(setting.connections.filter(byImporter).map(toImport))
-    }
-    schedule('0 2 * * *', importProductsJob)
+    schedule('0 0 * * *', fetchAndImportProductsJob)
 }
 
 run()
