@@ -1,7 +1,7 @@
 {
     "name": "tibr-conector",
     "version": "1.0.0",
-    "description": "Aplicaão para conexão Agis -> Bagy",
+    "description": "Aplicação para conexão Agis -> Bagy",
     "main": "index.ts",
     "scripts": {
         "dev": "ts-node src/index.ts"
