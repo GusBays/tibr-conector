@@ -1,10 +1,12 @@
 import { container, inject, injectable } from 'tsyringe'
 import { DB } from '../../../common/db/domain/db'
 import { NotFound } from '../../../common/exceptions/not-found'
-import { isEmpty, isUndefined, throwIf } from '../../../common/helpers/helper'
-import { Connection, ConnectionTypeEnum } from './connection/connection'
+import { isEmpty, isNotEmpty, isUndefined, not, throwIf } from '../../../common/helpers/helper'
+import { BagyAttribute, BagyAttributeValue } from '../../bagy/domain/bagy-attribute'
+import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
+import { Connection, ConnectionApi, ConnectionTypeEnum } from './connection/connection'
 import { ConnectionService } from './connection/connection-service'
-import { Setting, SettingBelongs, SettingFilter, SettingTypeEnum } from './setting'
+import { PricingSettingGroup, Setting, SettingBelongs, SettingFilter, SettingPricing, SettingTypeEnum } from './setting'
 import { SettingRepository } from './setting-repository'
 
 @injectable()
@@ -42,6 +44,54 @@ export class SettingService {
 
             return setting
         })
+    }
+
+    async syncPricingGroups(pricing: SettingPricing): Promise<Setting> {
+        const setting = await this.getOne({})
+
+        const { connections } = setting
+
+        const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
+        const bagy = connections.find(byApi)
+
+        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return setting
+
+        const request = new BagyRequest(bagy.config.token)
+
+        let attribute: BagyAttribute
+
+        if (isNotEmpty(pricing.attribute_id)) attribute = await request.getAttribute(pricing.attribute_id)
+        else {
+            const res = await request.getAttributes({ q: pricing.name })
+            attribute = res.data.at(0)
+        }
+
+        if (isEmpty(attribute)) {
+            const toBagyAttributeValue = (group: PricingSettingGroup, index: number): BagyAttributeValue =>
+                ({
+                    name: group.name,
+                    position: index + 1
+                } as BagyAttributeValue)
+            const values = pricing.groups.map(toBagyAttributeValue)
+
+            const data: BagyAttribute = {
+                name: pricing.name,
+                values
+            } as BagyAttribute
+
+            attribute = await request.createAttribute(data)
+        }
+
+        pricing.attribute_id = attribute.id
+        const assignBagyId = (group: PricingSettingGroup) => {
+            const byPosition = (value: BagyAttributeValue) => value.position === group.position
+            const valueOnBagy = attribute.values.find(byPosition)
+
+            group.attribute_value_id = valueOnBagy.id
+        }
+        pricing.groups.forEach(assignBagyId)
+
+        return await this.update({ ...setting, pricing })
     }
 
     private async setConnections(connections: Connection[], setting: Setting): Promise<void> {

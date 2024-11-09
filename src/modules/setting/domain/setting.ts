@@ -1,5 +1,5 @@
 import { Filter, Model, Timestamps } from '../../../common/contracts/contracts'
-import { AttributeValueBelongs } from '../../bagy/domain/attribute-value'
+import { AttributeBelongs, AttributeValueBelongs } from '../../bagy/domain/bagy-attribute'
 import { Connection } from './connection/connection'
 
 export interface Setting extends Model, Timestamps {
@@ -11,7 +11,7 @@ export interface SettingBelongs {
     setting_id: number
 }
 
-export interface SettingPricing {
+export interface SettingPricing extends AttributeBelongs {
     name: string
     groups: PricingSettingGroup[]
 }
