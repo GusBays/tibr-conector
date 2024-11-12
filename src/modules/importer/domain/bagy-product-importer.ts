@@ -59,6 +59,10 @@ export class BagyProductImporter extends Importer<BagyImporter> {
                 product.price = resource.config.price
             }
 
+            product.weight = resource.config.weight
+            product.height = resource.config.height
+            product.width = resource.config.width
+            product.depth = resource.config.depth
             product.active = resource.config.active
             product.short_description = resource.config.short_description
             product.external_id = resource.source_id.toString()
