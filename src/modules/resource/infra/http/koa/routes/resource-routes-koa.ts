@@ -9,11 +9,12 @@ import { ResourceService } from '../../../../domain/resource-service'
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update } = resourceHandler()
+    const { index, show, update, sync } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
+    router.post(`${path}/:id/sync`, auth, sync)
 }
 
 function resourceHandler() {
@@ -34,5 +35,10 @@ function resourceHandler() {
         KoaResponse.success(ctx, resource)
     }
 
-    return { index, show, update }
+    const sync = async (ctx: Context): Promise<void> => {
+        const resource = await service.sync(KoaHelper.extractParams<ResourceFilter>(ctx))
+        KoaResponse.success(ctx, resource)
+    }
+
+    return { index, show, update, sync }
 }

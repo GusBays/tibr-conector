@@ -63,13 +63,23 @@ export class BagyProductImporter extends Importer<BagyImporter> {
             product.short_description = resource.config.short_description
             product.external_id = resource.source_id.toString()
             product.ncm = resource.config.ncm
-            product.category_ids = resource.config.category_ids ?? [resource.config.category_default_id]
+
+            const getCategoryIds = (): number[] => {
+                const { category_ids, category_default_id } = resource.config
+
+                if (isNotEmpty(category_ids)) return category_ids
+                else if (isNotEmpty(category_default_id)) return [category_default_id]
+                else return null
+            }
+            product.category_ids = getCategoryIds()
             product.feature_ids = resource.config.feature_ids
 
             const toVariation = (group: PricingSettingGroup) => {
+                const price = +(product.price * group.markup).toFixed(2)
+
                 const variation: BagyVariation = {
                     product_id: product.id,
-                    price: product.price * group.markup,
+                    price,
                     price_compare: null,
                     attribute_value_id: group.attribute_value_id,
                     attribute_value_secondary_id: null,

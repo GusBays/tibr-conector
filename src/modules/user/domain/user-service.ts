@@ -46,7 +46,7 @@ export class UserService {
 
     async delete(filter: UserFilter): Promise<void> {
         const user = await this.getOne(filter)
-        throwIf(UserType.OWNER === user.type, UnprocessableEntity, [{ owner: 'cannot_delete_owner' }])
+        throwIf(UserType.OWNER === user.type, UnprocessableEntity, ['user', { owner: 'cannot_delete_owner' }])
 
         return await this.repository.delete(filter)
     }

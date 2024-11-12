@@ -9,14 +9,6 @@ export class History extends Model<IHistory> {
 
     @AllowNull(false)
     @Column(DataType.STRING)
-    declare readonly source: string
-
-    @AllowNull(false)
-    @Column(DataType.STRING)
-    declare readonly target: string
-
-    @AllowNull(false)
-    @Column(DataType.STRING)
     declare readonly started_at: string
 
     @AllowNull(false)

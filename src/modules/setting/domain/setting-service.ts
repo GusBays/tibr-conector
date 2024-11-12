@@ -6,7 +6,7 @@ import { BagyAttribute, BagyAttributeValue } from '../../bagy/domain/bagy-attrib
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { Connection, ConnectionApi, ConnectionTypeEnum } from './connection/connection'
 import { ConnectionService } from './connection/connection-service'
-import { PricingSettingGroup, Setting, SettingBelongs, SettingFilter, SettingPricing, SettingTypeEnum } from './setting'
+import { PricingSettingGroup, Setting, SettingBelongs, SettingFilter, SettingTypeEnum } from './setting'
 import { SettingRepository } from './setting-repository'
 
 @injectable()
@@ -46,10 +46,10 @@ export class SettingService {
         })
     }
 
-    async syncPricingGroups(pricing: SettingPricing): Promise<Setting> {
-        const setting = await this.getOne({})
+    async syncPricingGroups(filter: SettingFilter): Promise<Setting> {
+        const setting = await this.getOne(filter)
 
-        const { connections } = setting
+        const { pricing, connections } = setting
 
         const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
         const bagy = connections.find(byApi)

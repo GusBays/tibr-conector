@@ -2,6 +2,10 @@ import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { isEmpty, throwIf } from '../../../common/helpers/helper'
+import { ImporterFactory } from '../../importer/domain/importer-factory'
+import { Connection, ImporterConnection } from '../../setting/domain/connection/connection'
+import { isImporter } from '../../setting/domain/connection/connection-helper'
+import { SettingService } from '../../setting/domain/setting-service'
 import { Resource, ResourceFilter, ResourceTypeEnum } from './resource'
 import { ResourceRepository } from './resource-repository'
 
@@ -31,7 +35,17 @@ export class ResourceService {
         return await this.repository.update(data)
     }
 
-    async getAll(filter: ResourceFilter): Promise<Resource[]> {
-        return await this.repository.getAll(filter)
+    async sync(filter: ResourceFilter): Promise<Resource> {
+        const resource = await this.getOne(filter)
+        const setting = await SettingService.getInstance().getOne({})
+        const byApi = (connection: Connection) =>
+            connection.active && connection.api === resource.target && isImporter(connection)
+        const importer = setting.connections.find(byApi) as ImporterConnection
+
+        throwIf(isEmpty(importer), NotFound, ['importer'])
+
+        await ImporterFactory.getInstance(resource.type, setting, importer).importOne(resource)
+
+        return await this.update(resource)
     }
 }
