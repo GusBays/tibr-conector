@@ -18,7 +18,7 @@ export class AxiosRequest {
     }
 
     protected async put<T = any, R = any>(path: string, data: T): Promise<R> {
-        const response = await this.client.post<R>(path, data)
+        const response = await this.client.put<R>(path, data)
         return response.data
     }
 }
