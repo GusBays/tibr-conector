@@ -1,4 +1,4 @@
-import axios, { Axios, CreateAxiosDefaults } from 'axios'
+import axios, { Axios, AxiosRequestConfig, CreateAxiosDefaults } from 'axios'
 
 export class AxiosRequest {
     protected client: Axios
@@ -12,8 +12,8 @@ export class AxiosRequest {
         return response.data
     }
 
-    protected async get<R = any>(path: string, params: Record<string, any> = {}): Promise<R> {
-        const response = await this.client.get<R>(path, { params })
+    protected async get<R = any>(path: string, config?: AxiosRequestConfig): Promise<R> {
+        const response = await this.client.get<R>(path, config)
         return response.data
     }
 

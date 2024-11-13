@@ -27,7 +27,7 @@ export class BagyRequest extends AxiosRequest {
     }
 
     async getAttributes(params: BagyParams): Promise<BagyPagination<BagyAttribute>> {
-        return await this.get<BagyPagination>('/attributes', params)
+        return await this.get<BagyPagination>('/attributes', { params })
     }
 
     async getAttribute(id: number): Promise<BagyAttribute> {

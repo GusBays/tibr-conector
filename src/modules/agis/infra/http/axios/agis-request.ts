@@ -18,10 +18,10 @@ export class AgisRequest extends AxiosRequest {
     }
 
     async getProducts(params: AgisPaginationParams): Promise<AgisPagination<AgisProduct>> {
-        return await this.get<AgisPagination<AgisProduct>>('/rest/all/V1/agis/reseller/product/list', params)
+        return await this.get<AgisPagination<AgisProduct>>('/rest/all/V1/agis/reseller/product/list', { params })
     }
 
-    async getProductImage(url: string): Promise<NodeJS.ArrayBufferView> {
-        return await this.get<NodeJS.ArrayBufferView>(`/media/catalog/product/${url}`, { responseType: 'arraybuffer' })
+    async getProductImage(url: string): Promise<NodeJS.ReadableStream> {
+        return await this.get<NodeJS.ReadableStream>(`/media/catalog/product/${url}`, { responseType: 'stream' })
     }
 }

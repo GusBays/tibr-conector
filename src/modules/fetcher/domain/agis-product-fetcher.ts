@@ -1,5 +1,7 @@
 import { AxiosError } from 'axios'
+import { randomUUID } from 'crypto'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
+import { FileSystem } from '../../../common/file-system/domain/file-system'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
 import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
@@ -7,6 +9,7 @@ import {
     AgisProduct,
     AgisProductCustomAttribute,
     AgisProductCustomAttributeCode,
+    AgisProductMediaGallery,
     AgisProductStock
 } from '../../agis/domain/agis-product'
 import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
@@ -14,16 +17,23 @@ import { Dimensions, ProductConfig, ProductResource } from '../../resource/domai
 import { Resource, ResourceType } from '../../resource/domain/resource'
 import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
 import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
+import { Setting } from '../../setting/domain/setting'
 import { Fetcher } from './fetcher'
 
 type GetParams = (page: number, size: number) => AgisPaginationParams
 export class AgisProductFetcher extends Fetcher<AgisFetcher> {
+    private request: AgisRequest
+
+    constructor(setting: Setting, fetcher: AgisFetcher) {
+        super(setting, fetcher)
+        this.request = new AgisRequest(fetcher.config.token)
+    }
+
     protected async fetchDataBy(targets: ImporterConnection[]): Promise<Resource[]> {
         const { token } = this.fetcher.config
 
         if (isEmpty(token)) return
 
-        const request = new AgisRequest(token)
         const pagination: GetParams = (page: number, size: number) => ({
             'searchCriteria[currentPage]': page,
             'searchCriteria[pageSize]': size
@@ -32,7 +42,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         let total: number
 
         try {
-            const res = await request.getProducts(pagination(1, 1))
+            const res = await this.request.getProducts(pagination(1, 1))
             total = res.total_count
         } catch (e) {
             if (e instanceof AxiosError && e.response?.status === 401) {
@@ -46,7 +56,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         const resources: Resource[] = []
 
         for (let i = 1; i <= pages; i++) {
-            const { items } = await request.getProducts(pagination(i, perPage))
+            const { items } = await this.request.getProducts(pagination(i, perPage))
 
             const byMinPrice = (item: AgisProduct) => {
                 const price = this.getPriceOf(item)
@@ -76,7 +86,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
                 target: target.api,
                 target_id: resource?.target_id,
                 target_payload: resource?.target_payload,
-                config: this.getConfigBy(item, resource),
+                config: await this.getConfigBy(item, resource),
                 created_at: undefined,
                 updated_at: undefined
             }
@@ -84,7 +94,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         return await Promise.all(items.map(toFormat))
     }
 
-    private getConfigBy(item: AgisProduct, resource: ProductResource): ProductConfig {
+    private async getConfigBy(item: AgisProduct, resource: ProductResource): Promise<ProductConfig> {
         const getFromConfig = <T = any>(key: keyof ProductConfig, defaultValue: T = null) => {
             if (isEmpty(resource?.config)) return defaultValue
 
@@ -131,6 +141,31 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             return { balance }
         }
 
+        const getImages = async (): Promise<string[]> => {
+            const images = getFromConfig<string[]>('images')
+
+            if (isNotEmpty(images)) return images
+
+            const { media_gallery_entries } = item
+
+            if (isEmpty(media_gallery_entries)) return null
+
+            const byImage = (mediaGalleryEntry: AgisProductMediaGallery) => 'image' === mediaGalleryEntry.media_type
+            const toPath = (mediaGalleryEntry: AgisProductMediaGallery) => mediaGalleryEntry.file
+            const paths = media_gallery_entries.filter(byImage).map(toPath)
+
+            const toGetImage = async (path: string) => await this.request.getProductImage(path)
+            const agisImages = await Promise.all(paths.map(toGetImage))
+
+            const toSave = async (image: NodeJS.ReadableStream) => {
+                const path = `resources/products/images/${item.id}/${randomUUID()}.jpg`
+                await FileSystem.save(image, path)
+
+                return `media://${path}`
+            }
+            return await Promise.all(agisImages.map(toSave))
+        }
+
         return {
             name: getFromConfig('name', item.name),
             category_default_id: getFromConfig('category_default_id', this.fetcher.config.category_default_id),
@@ -148,7 +183,8 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
             partial_update: getFromConfig('partial_update', false),
-            allowed_to_import: getFromConfig('allowed_to_import', true)
+            allowed_to_import: getFromConfig('allowed_to_import', true),
+            images: await getImages()
         }
     }
 
