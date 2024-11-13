@@ -3,3 +3,4 @@ package-lock.json
 .DIST
 node_modules
 dist
+public
