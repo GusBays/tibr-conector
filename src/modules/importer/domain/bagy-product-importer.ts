@@ -1,5 +1,5 @@
-import { isNotEmpty } from '../../../common/helpers/helper'
-import { BagyProduct } from '../../bagy/domain/bagy-product'
+import { isEmpty, isNotEmpty } from '../../../common/helpers/helper'
+import { BagyProduct, BagyProductImage } from '../../bagy/domain/bagy-product'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { isAgisFetcher } from '../../fetcher/domain/fetcher-helper'
@@ -76,6 +76,24 @@ export class BagyProductImporter extends Importer<BagyImporter> {
                 else return null
             }
             product.category_ids = getCategoryIds()
+
+            const getImages = (): BagyProductImage[] => {
+                const { images } = resource.config
+
+                if (isEmpty(images)) return null
+
+                const toBagyProductImage = (image: string, index: number): BagyProductImage => {
+                    const src = image.includes('media://') ? image.replace('media://', `${process.env.APP_URL}/`) : image
+
+                    return {
+                        src,
+                        position: index + 1
+                    }
+                }
+                return images.map(toBagyProductImage)
+            }
+            product.images = getImages()
+
             product.feature_ids = resource.config.feature_ids
 
             const toVariation = (group: PricingSettingGroup) => {

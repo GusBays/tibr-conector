@@ -1,4 +1,5 @@
 import { Router } from '@koa/router'
+import { UUID } from 'crypto'
 import { Context } from 'koa'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
@@ -9,12 +10,13 @@ import { ResourceService } from '../../../../domain/resource-service'
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update, sync } = resourceHandler()
+    const { index, show, update, sync, getImage } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
     router.post(`${path}/:id/sync`, auth, sync)
+    router.get(`${path}/:type/images/:id/:image_id`, getImage)
 }
 
 function resourceHandler() {
@@ -40,5 +42,15 @@ function resourceHandler() {
         KoaResponse.success(ctx, resource)
     }
 
-    return { index, show, update, sync }
+    const getImage = async (ctx: Context): Promise<void> => {
+        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: UUID }>(ctx)
+        const image = await service.getImage(filter)
+
+        ctx.set('Content-Type', 'image/jpeg')
+        ctx.set('Content-Length', image.length.toString())
+
+        KoaResponse.success(ctx, image)
+    }
+
+    return { index, show, update, sync, getImage }
 }

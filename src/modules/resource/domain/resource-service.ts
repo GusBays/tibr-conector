@@ -1,6 +1,8 @@
+import { UUID } from 'crypto'
 import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
+import { FileSystem } from '../../../common/file-system/domain/file-system'
 import { isEmpty, throwIf } from '../../../common/helpers/helper'
 import { ImporterFactory } from '../../importer/domain/importer-factory'
 import { Connection, ImporterConnection } from '../../setting/domain/connection/connection'
@@ -47,5 +49,9 @@ export class ResourceService {
         await ImporterFactory.getInstance(resource.type, setting, importer).importOne(resource)
 
         return await this.update(resource)
+    }
+
+    async getImage(filter: ResourceFilter & { image_id: UUID }): Promise<Buffer> {
+        return FileSystem.get(`resources/${filter.type}/images/${filter.id}/${filter.image_id}.jpg`)
     }
 }

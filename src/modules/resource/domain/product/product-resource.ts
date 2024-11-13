@@ -23,6 +23,7 @@ export interface ProductConfig extends Dimensions {
     active: boolean
     partial_update: boolean
     allowed_to_import: boolean
+    images: string[]
     category_ids?: number[]
     feature_ids?: number[]
 }

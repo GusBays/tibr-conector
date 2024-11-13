@@ -1,4 +1,5 @@
-import { AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
+import { AfterCreate, AfterFind, AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
+import { isEmpty } from '../../../../../../common/helpers/helper'
 import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
 import { Resource as IResource, ResourceType } from '../../../../domain/resource'
 
@@ -35,4 +36,24 @@ export class Resource extends Model<IResource> {
     @AllowNull
     @Column(DataType.JSON)
     declare readonly target_payload: Record<string, any>
+
+    @AfterCreate
+    @AfterFind
+    static toSetImagesUrl(resource: Resource | Resource[]): void {
+        const setUrl = (resource: Resource) => {
+            const { config } = resource
+
+            if (isEmpty(config)) return
+
+            const { images } = config
+
+            if (isEmpty(images)) return
+
+            const toSetUrl = (image: string) => image.replace('media://', `${process.env.APP_URL}/`)
+            config.images = images.map(toSetUrl)
+        }
+
+        if (Array.isArray(resource)) resource.map(setUrl)
+        else setUrl(resource)
+    }
 }
