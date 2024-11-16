@@ -2,7 +2,7 @@ import { verify } from 'jsonwebtoken'
 import { Context, Next } from 'koa'
 import { UserType } from '../../../../../modules/user/domain/user'
 import { UserService } from '../../../../../modules/user/domain/user-service'
-import { Unauthenticated } from '../../../../exceptions/unauthenticated'
+import { Unauthorized } from '../../../../exceptions/unauthorized'
 import { isEmpty, throwIf } from '../../../../helpers/helper'
 
 export async function auth(ctx: Context, next: Next): Promise<void> {
@@ -10,7 +10,7 @@ export async function auth(ctx: Context, next: Next): Promise<void> {
     const token = auth?.split(' ').at(1)
 
     const missingToken = isEmpty(auth) || isEmpty(token)
-    throwIf(missingToken, Unauthenticated)
+    throwIf(missingToken, Unauthorized)
 
     const key = process.env.APP_KEY
 
@@ -22,7 +22,7 @@ export async function auth(ctx: Context, next: Next): Promise<void> {
         const user = await UserService.getInstance().getOne({ email: authorization.email, type: authorization.type })
         Object.assign(ctx, { user })
     } catch (e) {
-        throw new Unauthenticated()
+        throw new Unauthorized()
     }
 
     await next()

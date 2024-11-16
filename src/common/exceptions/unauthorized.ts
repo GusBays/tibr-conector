@@ -1,6 +1,6 @@
 import { Exception } from './exception'
 
-export class Unauthenticated extends Exception {
+export class Unauthorized extends Exception {
     constructor() {
         super('unauthenticated')
     }

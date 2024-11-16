@@ -1,6 +1,7 @@
 import { Router } from '@koa/router'
 import { UUID } from 'crypto'
 import { Context } from 'koa'
+import koaBody from 'koa-body'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
 import { auth } from '../../../../../../common/http/domain/koa/middlewares/auth-koa'
@@ -10,12 +11,22 @@ import { ResourceService } from '../../../../domain/resource-service'
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update, sync, getImage } = resourceHandler()
+    const { index, show, update, sync, getImage, createImage } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
     router.post(`${path}/:id/sync`, auth, sync)
+    router.post(
+        `${path}/:id/images`,
+        auth,
+        koaBody({
+            multipart: true
+        }),
+        createImage
+    )
+
+    // open route
     router.get(`${path}/:type/images/:id/:image_id`, getImage)
 }
 
@@ -43,7 +54,7 @@ function resourceHandler() {
     }
 
     const getImage = async (ctx: Context): Promise<void> => {
-        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: UUID }>(ctx)
+        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: `${UUID}.${string}` }>(ctx)
         const image = await service.getImage(filter)
 
         ctx.set('Content-Type', 'image/jpeg')
@@ -52,5 +63,13 @@ function resourceHandler() {
         KoaResponse.success(ctx, image)
     }
 
-    return { index, show, update, sync, getImage }
+    const createImage = async (ctx: Context): Promise<void> => {
+        const filter = KoaHelper.extractParams<ResourceFilter>(ctx)
+        const path = KoaHelper.extractTempFilePath(ctx)
+
+        const body = await service.createImage(filter, path)
+        KoaResponse.created(ctx, body)
+    }
+
+    return { index, show, update, sync, getImage, createImage }
 }

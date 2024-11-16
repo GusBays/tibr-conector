@@ -1,7 +1,5 @@
 import { AxiosError } from 'axios'
-import { randomUUID } from 'crypto'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
-import { FileSystem } from '../../../common/file-system/domain/file-system'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
 import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
@@ -141,29 +139,19 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             return { balance }
         }
 
-        const getImages = async (): Promise<string[]> => {
+        const getImages = (): { images: string[] } => {
             const images = getFromConfig<string[]>('images')
 
-            if (isNotEmpty(images)) return images
+            if (isNotEmpty(images)) return { images }
 
             const { media_gallery_entries } = item
 
             if (isEmpty(media_gallery_entries)) return null
 
             const byImage = (mediaGalleryEntry: AgisProductMediaGallery) => 'image' === mediaGalleryEntry.media_type
-            const toPath = (mediaGalleryEntry: AgisProductMediaGallery) => mediaGalleryEntry.file
-            const paths = media_gallery_entries.filter(byImage).map(toPath)
-
-            const toGetImage = async (path: string) => await this.request.getProductImage(path)
-            const agisImages = await Promise.all(paths.map(toGetImage))
-
-            const toSave = async (image: NodeJS.ReadableStream) => {
-                const path = `resources/products/images/${item.id}/${randomUUID()}.jpg`
-                await FileSystem.save(image, path)
-
-                return `media://${path}`
-            }
-            return await Promise.all(agisImages.map(toSave))
+            const toUrl = (mediaGalleryEntry: AgisProductMediaGallery) =>
+                `${process.env.AGIS_API_URL}/media/catalog/product${mediaGalleryEntry.file}`
+            return { images: media_gallery_entries.filter(byImage).map(toUrl) }
         }
 
         return {
@@ -178,13 +166,13 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             ...getPrice(),
             ...getDimensions(),
             ...getBalance(),
+            ...getImages(),
             reference: getFromConfig('reference', item.sku),
             gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN)),
             ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
             partial_update: getFromConfig('partial_update', false),
-            allowed_to_import: getFromConfig('allowed_to_import', true),
-            images: await getImages()
+            allowed_to_import: getFromConfig('allowed_to_import', true)
         }
     }
 

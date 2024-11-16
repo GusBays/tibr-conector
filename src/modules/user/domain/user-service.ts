@@ -3,7 +3,7 @@ import { sign } from 'jsonwebtoken'
 import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
-import { Unauthenticated } from '../../../common/exceptions/unauthenticated'
+import { Unauthorized } from '../../../common/exceptions/unauthorized'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, throwIf } from '../../../common/helpers/helper'
 import { User, UserFilter, UserType, UserTypeEnum } from './user'
@@ -57,7 +57,7 @@ export class UserService {
         try {
             await compare(user.password, data.password)
         } catch (e) {
-            throw new Unauthenticated()
+            throw new Unauthorized()
         }
 
         return user

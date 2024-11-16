@@ -38,21 +38,19 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
             const allowedToImport = false === isProductResource(resource) || resource.config.allowed_to_import
             const isCreation = isEmpty(resource.target_id)
 
-            try {
-                if (allowedToImport) {
+            if (allowedToImport) {
+                try {
                     const importer = this.getImporterBy(resource, targets)
                     await importer.importOne(resource)
 
                     if (isCreation) created++
                     else updated++
+                } catch (e) {
+                    errors++
                 }
-
-                isEmpty(resource.id)
-                    ? await this.resourceService.create(resource)
-                    : await this.resourceService.update(resource)
-            } catch (e) {
-                errors++
             }
+
+            isEmpty(resource.id) ? await this.resourceService.create(resource) : await this.resourceService.update(resource)
         }
         await Promise.all(resources.map(importToTarget))
 

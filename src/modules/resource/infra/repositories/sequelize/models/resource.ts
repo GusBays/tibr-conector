@@ -40,6 +40,8 @@ export class Resource extends Model<IResource> {
     @AfterCreate
     @AfterFind
     static toSetImagesUrl(resource: Resource | Resource[]): void {
+        if (isEmpty(resource)) return
+
         const setUrl = (resource: Resource) => {
             const { config } = resource
 

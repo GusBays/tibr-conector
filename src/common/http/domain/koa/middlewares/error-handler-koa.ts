@@ -1,6 +1,6 @@
 import { Context, Next } from 'koa'
 import { NotFound } from '../../../../exceptions/not-found'
-import { Unauthenticated } from '../../../../exceptions/unauthenticated'
+import { Unauthorized } from '../../../../exceptions/unauthorized'
 import { UnprocessableEntity } from '../../../../exceptions/unprocessable-entity'
 import { isNotEmpty } from '../../../../helpers/helper'
 import { KoaResponse } from '../koa-response'
@@ -15,17 +15,24 @@ export async function errorHandler(ctx: Context, next: Next): Promise<void> {
 
 function handle(e: Error, ctx: Context): void {
     const body = {
-        code: e.name,
+        code: 'internal_server_error',
         message: e.message
     }
 
     KoaResponse.internalServerError(ctx, body)
 
-    if (e instanceof Unauthenticated) KoaResponse.unauthorized(ctx, body)
+    if (e instanceof Unauthorized) {
+        body.code = 'unauthorized'
+        KoaResponse.unauthorized(ctx, body)
+    }
 
-    if (e instanceof NotFound) KoaResponse.notFound(ctx, body)
+    if (e instanceof NotFound) {
+        body.code = 'not_found'
+        KoaResponse.notFound(ctx, body)
+    }
 
     if (e instanceof UnprocessableEntity) {
+        body.code = 'unprocessable_entity'
         if (e.causes) {
             Object.assign(body, e.causes)
         }
