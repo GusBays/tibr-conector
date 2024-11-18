@@ -1,3 +1,4 @@
+import cors from '@koa/cors'
 import Router from '@koa/router'
 import { createNamespace } from 'cls-hooked'
 import { config } from 'dotenv'
@@ -42,7 +43,8 @@ async function run(): Promise<void> {
     await Promise.all(routes.map(toRegister))
 
     const app = new Koa()
-    app.use(bodyParser())
+    app.use(cors())
+        .use(bodyParser())
         .use(async (ctx, next) => await namespace.runAndReturn(async () => await next()))
         .use(errorHandler)
         .use(router.routes())
