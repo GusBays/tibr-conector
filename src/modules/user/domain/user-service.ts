@@ -5,7 +5,7 @@ import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { Unauthorized } from '../../../common/exceptions/unauthorized'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
-import { isEmpty, isNotEmpty, throwIf } from '../../../common/helpers/helper'
+import { isEmpty, isNotEmpty, not, throwIf } from '../../../common/helpers/helper'
 import { User, UserFilter, UserType, UserTypeEnum } from './user'
 import { UserRepository } from './user-repository'
 
@@ -54,11 +54,9 @@ export class UserService {
     async login(data: { email: string; password: string }): Promise<User> {
         const user = await this.getOne({ email: data.email })
 
-        try {
-            await compare(user.password, data.password)
-        } catch (e) {
-            throw new Unauthorized()
-        }
+        const authorized = await compare(data.password, user.password)
+
+        throwIf(not(authorized), Unauthorized)
 
         return user
     }
