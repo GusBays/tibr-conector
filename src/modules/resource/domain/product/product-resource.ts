@@ -12,10 +12,6 @@ export interface ProductConfig extends Dimensions {
     description: string
     markup: number
     price: number
-    weight: number
-    height: number
-    width: number
-    depth: number
     balance: number
     reference: string
     gtin: number
