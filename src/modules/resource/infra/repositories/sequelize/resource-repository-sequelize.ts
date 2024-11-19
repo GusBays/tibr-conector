@@ -1,4 +1,4 @@
-import { FindOptions, WhereOptions } from 'sequelize'
+import { FindOptions, literal, Op, WhereOptions } from 'sequelize'
 import { injectable } from 'tsyringe'
 import { Meta } from '../../../../../common/contracts/contracts'
 import { SequelizeHelper } from '../../../../../common/db/domain/sequelize/sequelize-helper'
@@ -38,7 +38,7 @@ export class ResourceRepositorySequelize implements ResourceRepository {
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
         const where: WhereOptions<IResource> = {}
 
-        const { id, source, source_id, target, target_id, type } = filter
+        const { id, source, source_id, target, target_id, type, q } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
@@ -46,6 +46,13 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         if (isNotEmpty(target)) where.target = target
         if (isNotEmpty(target_id)) where.target_id = target_id
         if (isNotEmpty(type)) where.type = type
+        if (isNotEmpty(q)) {
+            const pattern = `%${q}%`
+            where[Op.or] = [
+                { id: { [Op.like]: pattern } },
+                literal(`JSON_EXTRACT(config, '$.name') LIKE '${pattern}' COLLATE utf8mb4_general_ci`)
+            ]
+        }
 
         return { where }
     }
