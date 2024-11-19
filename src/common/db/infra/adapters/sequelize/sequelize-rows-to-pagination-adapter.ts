@@ -13,7 +13,9 @@ export class SequelizeRowsToPaginationAdapter<T = any> {
         const page = from / this.options.limit + 1
         const perPage = this.options.limit
         const to = perPage * page
+
         const lastPage = Math.ceil(this.total / perPage)
+        const last_page = Math.max(lastPage, 1)
 
         return {
             data,
@@ -23,7 +25,7 @@ export class SequelizeRowsToPaginationAdapter<T = any> {
                 total: this.total,
                 per_page: perPage,
                 current_page: page,
-                last_page: lastPage
+                last_page
             }
         }
     }
