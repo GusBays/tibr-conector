@@ -1,4 +1,5 @@
 import { AxiosError } from 'axios'
+import { randomUUID } from 'crypto'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
@@ -11,7 +12,12 @@ import {
     AgisProductStock
 } from '../../agis/domain/agis-product'
 import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
-import { Dimensions, ProductConfig, ProductResource } from '../../resource/domain/product/product-resource'
+import {
+    Dimensions,
+    ProductImage,
+    ProductResource,
+    ProductResourceConfig
+} from '../../resource/domain/product/product-resource'
 import { Resource, ResourceType } from '../../resource/domain/resource'
 import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
 import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
@@ -92,8 +98,8 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         return await Promise.all(items.map(toFormat))
     }
 
-    private async getConfigBy(item: AgisProduct, resource: ProductResource): Promise<ProductConfig> {
-        const getFromConfig = <T = any>(key: keyof ProductConfig, defaultValue: T = null) => {
+    private async getConfigBy(item: AgisProduct, resource: ProductResource): Promise<ProductResourceConfig> {
+        const getFromConfig = <T = any>(key: keyof ProductResourceConfig, defaultValue: T = null) => {
             if (isEmpty(resource?.config)) return defaultValue
 
             const { config } = resource
@@ -139,19 +145,28 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             return { balance }
         }
 
-        const getImages = (): { images: string[] } => {
-            const images = getFromConfig<string[]>('images')
+        const getImages = (): { images: ProductImage[] } => {
+            const images = getFromConfig<ProductImage[]>('images', [])
 
-            if (isNotEmpty(images)) return { images }
+            const imagesFromItem = item.media_gallery_entries
 
-            const { media_gallery_entries } = item
+            const byNotInConfig = (agisImage: AgisProductMediaGallery) => {
+                const byId = (productImage: ProductImage) => agisImage.id === productImage.source_id
+                return isEmpty(images.find(byId))
+            }
+            const newImages = imagesFromItem.filter(byNotInConfig)
 
-            if (isEmpty(media_gallery_entries)) return null
+            if (isEmpty(newImages)) return { images }
 
-            const byImage = (mediaGalleryEntry: AgisProductMediaGallery) => 'image' === mediaGalleryEntry.media_type
-            const toUrl = (mediaGalleryEntry: AgisProductMediaGallery) =>
-                `${process.env.AGIS_API_URL}/media/catalog/product${mediaGalleryEntry.file}`
-            return { images: media_gallery_entries.filter(byImage).map(toUrl) }
+            const toProductImage = (agisImage: AgisProductMediaGallery): ProductImage => ({
+                id: randomUUID(),
+                source_id: agisImage.id,
+                target_id: null,
+                src: `${process.env.AGIS_API_URL}/media/catalog/product${agisImage.file}`,
+                position: agisImage.position
+            })
+
+            return { images: [...images, ...newImages.map(toProductImage)] }
         }
 
         return {
