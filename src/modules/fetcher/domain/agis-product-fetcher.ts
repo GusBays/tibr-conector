@@ -172,12 +172,12 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
             partial_update: getFromConfig('partial_update', false),
-            allowed_to_import: getFromConfig('allowed_to_import', true)
+            allowed_to_import: getFromConfig('allowed_to_import', false)
         }
     }
 
     private getPriceOf(item: AgisProduct): number {
         const toSumPrice = (current: number, stock: AgisProductStock) => stock.price + current
-        return item.stock.reduce(toSumPrice, 0)
+        return +item.stock.reduce(toSumPrice, 0).toFixed(2)
     }
 }
