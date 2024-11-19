@@ -1,4 +1,4 @@
-import { UUID } from 'crypto'
+import { randomUUID, UUID } from 'crypto'
 import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
@@ -9,6 +9,7 @@ import { ImporterFactory } from '../../importer/domain/importer-factory'
 import { Connection, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
+import { ProductImage } from './product/product-resource'
 import { Resource, ResourceFilter, ResourceType, ResourceTypeEnum } from './resource'
 import { isProductResource } from './resource-helper'
 import { ResourceRepository } from './resource-repository'
@@ -22,18 +23,16 @@ export class ResourceService {
     }
 
     async create(data: Resource): Promise<Resource> {
-        const resource = await this.repository.create(data)
+        if (isProductResource(data) && isNotEmpty(data.config.images)) {
+            const toSave = async (image: ProductImage) => {
+                const res = await FileSystem.save(image.src, `resources/${ResourceType.PRODUCT}/images/${image.id}`)
+                image.src = res
+                return image
+            }
+            data.config.images = await Promise.all(data.config.images.map(toSave))
+        }
 
-        if (false === isProductResource(resource)) return resource
-
-        const { images } = resource.config
-
-        if (isEmpty(images)) return resource
-
-        const toSave = async (src: string) => await FileSystem.save(src, `resources/${resource.type}/images/${resource.id}`)
-        resource.config.images = await Promise.all(images.map(toSave))
-
-        return await this.update(resource)
+        return await this.repository.create(data)
     }
 
     async getPaginate(filter: ResourceFilter): Promise<Meta<Resource>> {
@@ -48,8 +47,11 @@ export class ResourceService {
 
     async update(data: Resource): Promise<Resource> {
         if (isProductResource(data) && isNotEmpty(data.config.images)) {
-            const toSave = async (src: string) =>
-                await FileSystem.save(src, `resources/${ResourceType.PRODUCT}/images/${data.id}`)
+            const toSave = async (image: ProductImage) => {
+                const res = await FileSystem.save(image.src, `resources/${ResourceType.PRODUCT}/images/${image.id}`)
+                image.src = res
+                return image
+            }
             data.config.images = await Promise.all(data.config.images.map(toSave))
         }
 
@@ -70,51 +72,55 @@ export class ResourceService {
         return await this.update(resource)
     }
 
-    async createImage(filter: ResourceFilter, image: string): Promise<{ src: string }> {
+    async createImage(filter: ResourceFilter, image: string): Promise<ProductImage> {
         const resource = await this.getOne(filter)
 
         if (false === isProductResource(resource)) throw new UnprocessableEntity('resource', { image: 'not_allowed' })
 
-        const media = await FileSystem.save(image, `resources/${resource.type}/images/${resource.id}`)
+        const lastPosition = resource.config?.images?.length || 0
+        const productImage: ProductImage = {
+            id: randomUUID(),
+            src: image,
+            source_id: null,
+            target_id: null,
+            position: lastPosition + 1
+        }
 
-        const images = resource.config?.images
+        const { images } = resource.config
 
-        if (isNotEmpty(images)) images.push(media)
-        else resource.config.images = [media]
+        if (isNotEmpty(images)) images.push(productImage)
+        else resource.config.images = [productImage]
 
         await this.update(resource)
 
-        const src = media.replace('media://', process.env.APP_URL)
-
-        return { src }
+        return productImage
     }
 
     async getImage(filter: ResourceFilter & { image_id: `${UUID}.${string}` }): Promise<Buffer> {
         try {
-            return await FileSystem.get(`resources/${filter.type}/images/${filter.id}/${filter.image_id}`)
+            return await FileSystem.get(`resources/${filter.type}/images/${filter.image_id}`)
         } catch (e) {
             if (e.message?.includes('ENOENT')) throw new NotFound('image')
             else throw e
         }
     }
 
-    async deleteImage(filter: ResourceFilter & { image_id: `${UUID}.${string}` }): Promise<void> {
+    async deleteImage(filter: ResourceFilter & { image_id: UUID }): Promise<void> {
         const resource = await this.getOne(filter)
 
         if (false === isProductResource(resource)) throw new UnprocessableEntity('resource', { image: 'not_allowed' })
 
         const { images } = resource.config
 
-        const path = `resources/${resource.type}/images/${resource.id}/${filter.image_id}`
-        const media = `media://${path}`
+        const byId = (image: ProductImage) => image.id === filter.image_id
+        const index = images.findIndex(byId)
 
-        const index = images.indexOf(media)
-
-        if (index === -1) throw new NotFound('image')
+        throwIf(-1 === index, NotFound, ['image'])
 
         images.splice(index, 1)
 
-        await FileSystem.delete(path)
+        await FileSystem.delete(`resources/${resource.type}/images/${filter.image_id}`)
+
         await this.update(resource)
     }
 }
