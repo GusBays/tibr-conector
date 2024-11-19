@@ -23,6 +23,8 @@ export interface ProductBelongs {
 }
 
 export interface BagyProductImage {
+    id?: number
     src: string
     position: number
+    external_id: string
 }
