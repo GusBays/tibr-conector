@@ -33,7 +33,11 @@ function userHandler() {
     }
 
     const show = async (ctx: Context): Promise<void> => {
-        const user = await service.getOne({ id: Number(ctx.params.id) })
+        const { id } = KoaHelper.extractParams<UserFilter>(ctx)
+
+        const filter = isNaN(+id) ? { token: id } : { id: Number(id) }
+
+        const user = await service.getOne(filter)
         KoaResponse.success(ctx, user)
     }
 
