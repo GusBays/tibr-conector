@@ -3,7 +3,7 @@ import { BagyProduct, BagyProductImage } from '../../bagy/domain/bagy-product'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { isAgisFetcher } from '../../fetcher/domain/fetcher-helper'
-import { ProductResource } from '../../resource/domain/product/product-resource'
+import { ProductImage, ProductResource } from '../../resource/domain/product/product-resource'
 import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
 import { Connection, ConnectionApi, FetcherConnection } from '../../setting/domain/connection/connection'
 import { isFetcher } from '../../setting/domain/connection/connection-helper'
@@ -30,6 +30,8 @@ export class BagyProductImporter extends Importer<BagyImporter> {
             const res = await this.request.createProduct(product)
             Object.assign(resource, { target_id: res.id, target_payload: res })
         }
+
+        this.afterCreate(resource)
 
         return resource
     }
@@ -82,12 +84,18 @@ export class BagyProductImporter extends Importer<BagyImporter> {
 
                 if (isEmpty(images)) return null
 
-                const toBagyProductImage = (image: string, index: number): BagyProductImage => {
-                    const src = image.includes('media://') ? image.replace('media://', `${process.env.APP_URL}/`) : image
+                const toBagyProductImage = (image: ProductImage): BagyProductImage => {
+                    const src = image.src.includes('media://')
+                        ? image.src.replace('media://', `${process.env.APP_URL}/`)
+                        : image.src
+
+                    const { target_id: id, id: external_id, position } = image
 
                     return {
+                        id,
                         src,
-                        position: index + 1
+                        position,
+                        external_id
                     }
                 }
                 return images.map(toBagyProductImage)
@@ -122,5 +130,23 @@ export class BagyProductImporter extends Importer<BagyImporter> {
         }
 
         return product
+    }
+
+    private afterCreate(resource: ProductResource): void {
+        if (isEmpty(resource.target_payload)) return
+
+        const { images, variations } = resource.target_payload as BagyProduct
+
+        if (isNotEmpty(resource.config.images) && isNotEmpty(images)) {
+            const setTargetId = (image: ProductImage) => {
+                const byExternalId = (img: BagyProductImage) => img.external_id === image.id
+                const bagyImage = images.find(byExternalId)
+
+                if (isEmpty(bagyImage)) return
+
+                image.target_id = bagyImage.id
+            }
+            resource.config.images.forEach(setTargetId)
+        }
     }
 }
