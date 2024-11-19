@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import fs, { createReadStream } from 'fs'
 import { dirname, extname, join } from 'path'
 import { AxiosRequest } from '../../http/domain/axios/axios-request'
@@ -14,13 +13,12 @@ export class FileSystem {
 
         const { file, ext } = await this.getFileBy(data)
 
-        const fileName = randomUUID() + ext
-        const pathWithFile = `${path}/${fileName}`
-
-        const dir = join(process.cwd(), 'public', dirname(pathWithFile))
+        const dir = join(process.cwd(), 'public', dirname(path))
         this.createDirIfNotExists(dir)
 
-        const fullPath = join(process.cwd(), 'public', pathWithFile)
+        const fullPath = join(process.cwd(), 'public', path + ext)
+
+        if (this.exists(fullPath)) await this.delete(fullPath)
 
         await new Promise((resolve, reject) => {
             const stream = fs.createWriteStream(fullPath)
@@ -31,7 +29,7 @@ export class FileSystem {
             stream.on('error', reject)
         })
 
-        return `media://${pathWithFile}`
+        return `media://${path + ext}`
     }
 
     static async get(path: string): Promise<Buffer> {
@@ -78,5 +76,9 @@ export class FileSystem {
         }
 
         return { file, ext }
+    }
+
+    private static exists(path: string): boolean {
+        return fs.existsSync(path)
     }
 }
