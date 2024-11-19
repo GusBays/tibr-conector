@@ -1,11 +1,12 @@
+import { UUID } from 'crypto'
 import { Resource, ResourceType } from '../resource'
 
 export interface ProductResource extends Resource {
     type: ResourceType.PRODUCT
-    config: ProductConfig
+    config: ProductResourceConfig
 }
 
-export interface ProductConfig extends Dimensions {
+export interface ProductResourceConfig extends Dimensions {
     category_default_id: number
     name: string
     short_description: string
@@ -19,9 +20,17 @@ export interface ProductConfig extends Dimensions {
     active: boolean
     partial_update: boolean
     allowed_to_import: boolean
-    images: string[]
+    images: ProductImage[]
     category_ids?: number[]
     feature_ids?: number[]
+}
+
+export interface ProductImage {
+    id: UUID
+    source_id: number
+    target_id: number
+    src: string
+    position: number
 }
 
 export interface Dimensions {
