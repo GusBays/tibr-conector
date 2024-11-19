@@ -27,7 +27,7 @@ export async function resourceRoutesKoa(router: Router): Promise<void> {
     )
 
     // open route
-    router.get(`${path}/:type/images/:id/:image_id`, getImage)
+    router.get(`${path}/:type/images/:image_id`, getImage)
 }
 
 function resourceHandler() {
