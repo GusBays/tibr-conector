@@ -1,6 +1,7 @@
 import { AfterCreate, AfterFind, AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
 import { isEmpty } from '../../../../../../common/helpers/helper'
 import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
+import { ProductImage } from '../../../../domain/product/product-resource'
 import { Resource as IResource, ResourceType } from '../../../../domain/resource'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
@@ -51,7 +52,10 @@ export class Resource extends Model<IResource> {
 
             if (isEmpty(images)) return
 
-            const toSetUrl = (image: string) => image.replace('media://', `${process.env.APP_URL}/`)
+            const toSetUrl = (image: ProductImage) => {
+                image.src = image.src.replace('media://', `${process.env.APP_URL}/`)
+                return image
+            }
             config.images = images.map(toSetUrl)
         }
 
