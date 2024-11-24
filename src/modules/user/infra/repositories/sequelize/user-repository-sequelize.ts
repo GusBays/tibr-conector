@@ -42,11 +42,12 @@ export class UserRepositorySequelize implements UserRepository {
     private interpret(filter: UserFilter): FindOptions<IUser> {
         const where: WhereOptions<IUser> = {}
 
-        const { id, email, type, q } = filter
+        const { id, email, type, types, q } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(email)) where.email = email
         if (isNotEmpty(type)) where.type = type
+        if (isNotEmpty(types)) where.type = { [Op.in]: types }
         if (isNotEmpty(q)) {
             const pattern = `%${q}%`
             where[Op.or] = { first_name: { [Op.like]: pattern }, email: { [Op.like]: pattern } }

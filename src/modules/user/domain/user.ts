@@ -12,6 +12,7 @@ export interface User extends Model, Timestamps {
 export interface UserFilter extends Partial<Model>, Filter {
     email?: string
     type?: UserType
+    types?: UserType[]
 }
 
 export enum UserType {

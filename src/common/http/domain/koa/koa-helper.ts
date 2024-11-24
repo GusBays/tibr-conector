@@ -1,4 +1,5 @@
 import { Context } from 'koa'
+import { not } from '../../../helpers/helper'
 
 export abstract class KoaHelper {
     static extractBody<T = any>(ctx: Context): T {
@@ -15,6 +16,17 @@ export abstract class KoaHelper {
     static extractParams<T = any>(ctx: Context): T {
         const params = ctx.params || {}
         const query = ctx.query || {}
+
+        const parseArray = (key: string) => {
+            if (not(key.includes('[]'))) return
+
+            const keyParsed = key.replace('[]', '')
+            const value = query[key]
+            delete query[key]
+            query[keyParsed] = value
+        }
+        Object.keys(query).forEach(parseArray)
+
         return { ...params, ...query } as T
     }
 
