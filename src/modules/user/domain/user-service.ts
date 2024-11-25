@@ -41,6 +41,9 @@ export class UserService {
             const user = await this.getOne({ id: data.id })
             data.token = sign({ email: data.email ?? user.email, type: data.type ?? user.type }, process.env.APP_KEY)
         }
+
+        if (isNotEmpty(data.password)) data.password = await hash(data.password, 10)
+
         return await this.repository.update(data)
     }
 
