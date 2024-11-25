@@ -9,12 +9,13 @@ import { SettingService } from '../../../../domain/setting-service'
 const path = '/settings'
 
 export async function settingRoutesKoa(router: Router): Promise<void> {
-    const { store, show, update, sync } = settingHandler()
+    const { store, show, update, syncPricingGroups, syncWebhooks } = settingHandler()
 
     router.post(path, auth, store)
     router.get(path, auth, show)
     router.put(`${path}/:id`, auth, update)
-    router.post(`${path}/:id/sync`, auth, sync)
+    router.post(`${path}/:id/sync-price-groups`, auth, syncPricingGroups)
+    router.post(`${path}/:id/sync-webhooks`, auth, syncWebhooks)
 }
 
 function settingHandler() {
@@ -35,10 +36,15 @@ function settingHandler() {
         KoaResponse.success(ctx, setting)
     }
 
-    const sync = async (ctx: Context): Promise<void> => {
+    const syncPricingGroups = async (ctx: Context): Promise<void> => {
         const setting = await service.syncPricingGroups(KoaHelper.extractParams<SettingFilter>(ctx))
         KoaResponse.success(ctx, setting)
     }
 
-    return { store, show, update, sync }
+    const syncWebhooks = async (ctx: Context): Promise<void> => {
+        await service.syncWebhooks(KoaHelper.extractParams<SettingFilter>(ctx))
+        KoaResponse.noContent(ctx)
+    }
+
+    return { store, show, update, syncPricingGroups, syncWebhooks }
 }

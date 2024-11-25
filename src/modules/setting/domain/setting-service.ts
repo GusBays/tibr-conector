@@ -3,6 +3,7 @@ import { DB } from '../../../common/db/domain/db'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { isEmpty, isNotEmpty, isUndefined, not, throwIf } from '../../../common/helpers/helper'
 import { BagyAttribute, BagyAttributeValue } from '../../bagy/domain/bagy-attribute'
+import { BagyWebhook, BagyWebhookResource } from '../../bagy/domain/bagy-webhook'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { Connection, ConnectionApi, ConnectionTypeEnum } from './connection/connection'
 import { ConnectionService } from './connection/connection-service'
@@ -92,6 +93,31 @@ export class SettingService {
         pricing.groups.forEach(assignBagyId)
 
         return await this.update({ ...setting, pricing })
+    }
+
+    async syncWebhooks(filter: SettingFilter): Promise<void> {
+        const setting = await this.getOne(filter)
+
+        const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
+        const bagy = setting.connections.find(byApi)
+
+        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return
+
+        const request = new BagyRequest(bagy.config.token)
+
+        const webhooks = await request.getWebhooks({ resource: 'variations' })
+
+        const byUrl = (webhook: BagyWebhook) => webhook.url.includes(process.env.APP_URL)
+        const webhooksOnApp = webhooks.data.filter(byUrl)
+
+        if (isNotEmpty(webhooksOnApp)) return
+
+        const webhook: BagyWebhook = {
+            resource: BagyWebhookResource.VARIATIONS,
+            url: `${process.env.APP_URL}/resources/bagy/webhook`
+        } as BagyWebhook
+
+        await request.createWebhook(webhook)
     }
 
     private async setConnections(connections: Connection[], setting: Setting): Promise<void> {

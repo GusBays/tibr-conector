@@ -3,6 +3,7 @@ import { AxiosRequest } from '../../../../../common/http/domain/axios/axios-requ
 import { BagyAttribute } from '../../../domain/bagy-attribute'
 import { BagyPagination, BagyParams } from '../../../domain/bagy-pagination'
 import { BagyProduct } from '../../../domain/bagy-product'
+import { BagyWebhook } from '../../../domain/bagy-webhook'
 
 export class BagyRequest extends AxiosRequest {
     constructor(token: string) {
@@ -22,6 +23,10 @@ export class BagyRequest extends AxiosRequest {
         return await this.post<BagyProduct, BagyProduct>('/products', data)
     }
 
+    async getProduct(id: number): Promise<BagyProduct> {
+        return await this.get<BagyProduct>(`/products/${id}`)
+    }
+
     async updateProduct(data: BagyProduct): Promise<BagyProduct> {
         return await this.put<BagyProduct, BagyProduct>(`/products/${data.id}`, data)
     }
@@ -36,5 +41,13 @@ export class BagyRequest extends AxiosRequest {
 
     async createAttribute(data: BagyAttribute): Promise<BagyAttribute> {
         return await this.post<BagyAttribute, BagyAttribute>('/attributes', data)
+    }
+
+    async getWebhooks(data: BagyParams): Promise<BagyPagination<BagyWebhook>> {
+        return await this.get<BagyPagination>('/webhooks', { params: data })
+    }
+
+    async createWebhook(data: BagyWebhook): Promise<BagyWebhook> {
+        return await this.post<BagyWebhook, BagyWebhook>('/webhooks', data)
     }
 }

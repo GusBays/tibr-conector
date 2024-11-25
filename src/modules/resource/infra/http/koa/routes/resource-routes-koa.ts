@@ -5,13 +5,15 @@ import koaBody from 'koa-body'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
 import { auth } from '../../../../../../common/http/domain/koa/middlewares/auth-koa'
+import { BagyWebhookPayload } from '../../../../../bagy/domain/bagy-webhook'
+import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
 import { Resource, ResourceFilter } from '../../../../domain/resource'
 import { ResourceService } from '../../../../domain/resource-service'
 
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update, sync, getImage, createImage } = resourceHandler()
+    const { index, show, update, sync, getImage, createImage, webhook } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
@@ -25,6 +27,7 @@ export async function resourceRoutesKoa(router: Router): Promise<void> {
         }),
         createImage
     )
+    router.post(`${path}/:api/webhook`, webhook)
 
     // open route
     router.get(`${path}/:type/images/:image_id`, getImage)
@@ -71,5 +74,11 @@ function resourceHandler() {
         KoaResponse.created(ctx, body)
     }
 
-    return { index, show, update, sync, getImage, createImage }
+    const webhook = async (ctx: Context): Promise<void> => {
+        const { api } = KoaHelper.extractParams<{ api: string }>(ctx)
+        const body = KoaHelper.extractBody<BagyWebhookPayload>(ctx)
+        await service.webhook(api as ConnectionApi, body)
+    }
+
+    return { index, show, update, sync, getImage, createImage, webhook }
 }

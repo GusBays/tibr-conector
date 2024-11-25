@@ -4,12 +4,16 @@ import { Meta } from '../../../common/contracts/contracts'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { FileSystem } from '../../../common/file-system/domain/file-system'
-import { isEmpty, isNotEmpty, throwIf } from '../../../common/helpers/helper'
+import { isEmpty, isNotEmpty, not, throwIf } from '../../../common/helpers/helper'
+import { isBagyVariationStockWebhook } from '../../bagy/domain/bagy-helper'
+import { BagyVariation } from '../../bagy/domain/bagy-variation'
+import { BagyWebhookPayload } from '../../bagy/domain/bagy-webhook'
+import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { ImporterFactory } from '../../importer/domain/importer-factory'
-import { Connection, ImporterConnection } from '../../setting/domain/connection/connection'
+import { Connection, ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
-import { ProductImage } from './product/product-resource'
+import { ProductImage, ProductResource } from './product/product-resource'
 import { Resource, ResourceFilter, ResourceType, ResourceTypeEnum } from './resource'
 import { isProductResource } from './resource-helper'
 import { ResourceRepository } from './resource-repository'
@@ -122,5 +126,39 @@ export class ResourceService {
         await FileSystem.delete(`resources/${resource.type}/images/${filter.image_id}`)
 
         await this.update(resource)
+    }
+
+    async webhook(api: ConnectionApi, payload: BagyWebhookPayload): Promise<void> {
+        const setting = await SettingService.getInstance().getOne({})
+
+        const byApi = (connection: Connection) => api === connection.api
+        const bagy = setting.connections.find(byApi)
+
+        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return
+
+        if (false === isBagyVariationStockWebhook(payload)) return
+
+        const resource = (await this.getOne({
+            type: ResourceType.PRODUCT,
+            target: ConnectionApi.BAGY,
+            target_id: payload.data.product_id
+        })) as ProductResource
+
+        const newBalance = payload.data.balance
+
+        if (resource.config.balance === newBalance) return
+
+        Object.assign(resource.config, { balance: newBalance })
+
+        const request = new BagyRequest(bagy.config.token)
+
+        const product = await request.getProduct(payload.data.product_id)
+
+        const toRemoveUpdatedOne = (variation: BagyVariation) => variation.id !== payload.id
+        const setNewBalance = (variation: BagyVariation) => Object.assign(variation, { balance: newBalance })
+        product.variations.filter(toRemoveUpdatedOne).forEach(setNewBalance)
+
+        const target_payload = await request.updateProduct(product)
+        await this.update({ ...resource, target_payload })
     }
 }

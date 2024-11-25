@@ -1,4 +1,4 @@
-export interface BagyParams {
+export interface BagyParams extends Record<string, any> {
     id?: number
     q?: string
 }
