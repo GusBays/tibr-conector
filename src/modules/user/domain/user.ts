@@ -7,12 +7,16 @@ export interface User extends Model, Timestamps {
     token: string
     password: string
     type: UserType
+    active: boolean
+    approved: boolean
 }
 
 export interface UserFilter extends Partial<Model>, Filter {
     email?: string
     type?: UserType
     types?: UserType[]
+    active?: boolean
+    approved?: boolean
 }
 
 export enum UserType {

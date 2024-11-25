@@ -1,4 +1,4 @@
-import { AllowNull, Column, DataType, Model, Table, Unique } from 'sequelize-typescript'
+import { AllowNull, Column, DataType, Default, Model, Table, Unique } from 'sequelize-typescript'
 import { User as IUser, UserType } from '../../../../domain/user'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
@@ -28,4 +28,14 @@ export class User extends Model<IUser> {
     @Unique
     @Column(DataType.STRING)
     declare readonly token: string
+
+    @AllowNull(false)
+    @Default(1)
+    @Column(DataType.BOOLEAN)
+    declare readonly active: boolean
+
+    @AllowNull(false)
+    @Default(0)
+    @Column(DataType.BOOLEAN)
+    declare readonly approved: boolean
 }

@@ -19,7 +19,12 @@ export async function auth(ctx: Context, next: Next): Promise<void> {
 
         if (UserType.SUPER === authorization.type) return next()
 
-        const user = await UserService.getInstance().getOne({ email: authorization.email, type: authorization.type })
+        const user = await UserService.getInstance().getOne({
+            email: authorization.email,
+            type: authorization.type,
+            active: true,
+            approved: true
+        })
         Object.assign(ctx, { user })
     } catch (e) {
         throw new Unauthorized()

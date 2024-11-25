@@ -51,8 +51,12 @@ export class UserService {
         return await this.repository.delete(filter)
     }
 
+    async getAll(filter: UserFilter): Promise<User[]> {
+        return await this.repository.getAll(filter)
+    }
+
     async login(data: { email: string; password: string }): Promise<User> {
-        const user = await this.getOne({ email: data.email })
+        const user = await this.getOne({ email: data.email, active: true, approved: true })
 
         const authorized = await compare(data.password, user.password)
 

@@ -39,15 +39,23 @@ export class UserRepositorySequelize implements UserRepository {
         await User.destroy(this.interpret(filter))
     }
 
+    async getAll(filter: UserFilter): Promise<IUser[]> {
+        const users = await User.findAll(this.interpret(filter))
+        const toJSON = (user: User) => user.toJSON()
+        return users.map(toJSON)
+    }
+
     private interpret(filter: UserFilter): FindOptions<IUser> {
         const where: WhereOptions<IUser> = {}
 
-        const { id, email, type, types, q } = filter
+        const { id, email, type, types, active, approved, q } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(email)) where.email = email
         if (isNotEmpty(type)) where.type = type
         if (isNotEmpty(types)) where.type = { [Op.in]: types }
+        if (isNotEmpty(active)) where.active = Boolean(active)
+        if (isNotEmpty(approved)) where.approved = Boolean(approved)
         if (isNotEmpty(q)) {
             const pattern = `%${q}%`
             where[Op.or] = { first_name: { [Op.like]: pattern }, email: { [Op.like]: pattern } }
