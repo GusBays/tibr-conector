@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { isEmpty, isNotEmpty, not } from '../../../common/helpers/helper'
-import { FetchHistory, HistoryExtra, HistoryType } from '../../history/domain/history'
+import { Notification } from '../../../common/notification/domain/notification'
+import { FetchHistory, History, HistoryExtra, HistoryType } from '../../history/domain/history'
 import { HistoryService } from '../../history/domain/history-service'
 import { Importer } from '../../importer/domain/importer'
 import { ImporterFactory } from '../../importer/domain/importer-factory'
@@ -10,6 +11,8 @@ import { ResourceService } from '../../resource/domain/resource-service'
 import { Connection, ConnectionApi, FetcherConnection, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { Setting } from '../../setting/domain/setting'
+import { User, UserType } from '../../user/domain/user'
+import { UserService } from '../../user/domain/user-service'
 
 export abstract class Fetcher<F extends FetcherConnection = any> {
     protected resourceService = ResourceService.getInstance()
@@ -54,7 +57,24 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         }
         await Promise.all(resources.map(importToTarget))
 
-        await this.createHistory(stated_at, { created, updated, errors })
+        const history = await this.createHistory(stated_at, { created, updated, errors })
+
+        const users = await UserService.getInstance().getAll({ active: true, approved: true })
+
+        const byOwner = (user: User) => UserType.OWNER === user.type
+        const to = users.find(byOwner)?.email
+
+        const byNotOwner = (user: User) => UserType.OWNER !== user.type
+        const toEmail = (user: User) => user.email
+        const cc = users.filter(byNotOwner).map(toEmail).join(',')
+
+        await Notification.send({
+            to,
+            cc,
+            subject: 'Importação de produtos concluída!',
+            templatePath: 'import-concluded',
+            context: history
+        })
     }
 
     protected abstract fetchDataBy(targets: ImporterConnection[]): Promise<Resource[]>
@@ -91,7 +111,7 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         return importer
     }
 
-    private async createHistory(started_at, extra: HistoryExtra): Promise<void> {
+    private async createHistory(started_at, extra: HistoryExtra): Promise<History> {
         const history: FetchHistory = {
             id: null,
             connection: this.fetcher.api,
@@ -102,6 +122,6 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
             created_at: null,
             updated_at: null
         }
-        await this.historyService.create(history)
+        return await this.historyService.create(history)
     }
 }

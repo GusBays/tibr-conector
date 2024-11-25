@@ -8,6 +8,7 @@ import { schedule } from 'node-cron'
 import 'reflect-metadata'
 import { sequelizeBootstrap } from './common/db/infra/bootstraps/sequelize-bootstrap'
 import { errorHandler } from './common/http/domain/koa/middlewares/error-handler-koa'
+import { notificationRoutesKoa } from './common/notification/infra/http/koa/notification-routes-koa'
 import { FetcherFactory } from './modules/fetcher/domain/fetcher-factory'
 import { historyBootstrap } from './modules/history/infra/bootstraps/history-bootstrap'
 import { historyRoutesKoa } from './modules/history/infra/http/koa/routes/history-routes-koa'
@@ -39,7 +40,7 @@ async function run(): Promise<void> {
 
     const router = new Router()
     const toRegister = async (route: Route) => await route(router)
-    const routes = [historyRoutesKoa, resourceRoutesKoa, settingRoutesKoa, userRoutesKoa]
+    const routes = [historyRoutesKoa, resourceRoutesKoa, settingRoutesKoa, userRoutesKoa, notificationRoutesKoa]
     await Promise.all(routes.map(toRegister))
 
     const app = new Koa()

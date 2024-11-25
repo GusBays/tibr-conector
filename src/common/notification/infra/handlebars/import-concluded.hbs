@@ -1,0 +1,15 @@
+{{>header}}
+    <div class="row align-items-center">
+        <div class="col-12">
+            <h4 class="text-start">Status da integração com {{ capitalize connection }}</h1>
+            <p class="text-start">A importação foi concluída com sucesso, segue abaixo os detalhes:</p>
+            <ul class="attributes">
+                <li>Início: {{ formatDate started_at }}</li>
+                <li>Total de produtos criados: {{ extra.created }}</li>
+                <li>Total de produtos atualizados: {{ extra.updated }}</li>
+                <li>Final: {{ formatDate ended_at }}</li>
+            </ul>
+            <a class="btn btn-primary success" href="{{ getAdminUrl }}/produtos">Acessar painel</a>
+        </div>
+    </div>
+{{>footer}}
