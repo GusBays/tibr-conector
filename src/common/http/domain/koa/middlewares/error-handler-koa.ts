@@ -1,4 +1,5 @@
 import { Context, Next } from 'koa'
+import { Inactive } from '../../../../exceptions/inactive'
 import { NotFound } from '../../../../exceptions/not-found'
 import { Unauthorized } from '../../../../exceptions/unauthorized'
 import { UnprocessableEntity } from '../../../../exceptions/unprocessable-entity'
@@ -23,6 +24,11 @@ function handle(e: Error, ctx: Context): void {
 
     if (e instanceof Unauthorized) {
         body.code = 'unauthorized'
+        KoaResponse.unauthorized(ctx, body)
+    }
+
+    if (e instanceof Inactive) {
+        body.code = e.message
         KoaResponse.unauthorized(ctx, body)
     }
 

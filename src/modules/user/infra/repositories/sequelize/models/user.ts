@@ -33,9 +33,4 @@ export class User extends Model<IUser> {
     @Default(1)
     @Column(DataType.BOOLEAN)
     declare readonly active: boolean
-
-    @AllowNull(false)
-    @Default(0)
-    @Column(DataType.BOOLEAN)
-    declare readonly approved: boolean
 }

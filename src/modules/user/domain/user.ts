@@ -8,7 +8,6 @@ export interface User extends Model, Timestamps {
     password: string
     type: UserType
     active: boolean
-    approved: boolean
 }
 
 export interface UserFilter extends Partial<Model>, Filter {
@@ -16,7 +15,6 @@ export interface UserFilter extends Partial<Model>, Filter {
     type?: UserType
     types?: UserType[]
     active?: boolean
-    approved?: boolean
 }
 
 export enum UserType {

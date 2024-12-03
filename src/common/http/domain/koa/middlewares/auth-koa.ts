@@ -22,8 +22,7 @@ export async function auth(ctx: Context, next: Next): Promise<void> {
         const user = await UserService.getInstance().getOne({
             email: authorization.email,
             type: authorization.type,
-            active: true,
-            approved: true
+            active: true
         })
         Object.assign(ctx, { user })
     } catch (e) {

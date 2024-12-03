@@ -59,7 +59,7 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
 
         const history = await this.createHistory(stated_at, { created, updated, errors })
 
-        const users = await UserService.getInstance().getAll({ active: true, approved: true })
+        const users = await UserService.getInstance().getAll({ active: true })
 
         const byOwner = (user: User) => UserType.OWNER === user.type
         const to = users.find(byOwner)?.email

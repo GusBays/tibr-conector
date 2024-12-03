@@ -2,6 +2,7 @@ import { compare, hash } from 'bcrypt'
 import { sign } from 'jsonwebtoken'
 import { container, inject, injectable } from 'tsyringe'
 import { Meta } from '../../../common/contracts/contracts'
+import { Inactive } from '../../../common/exceptions/inactive'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { Unauthorized } from '../../../common/exceptions/unauthorized'
 import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
@@ -59,11 +60,12 @@ export class UserService {
     }
 
     async login(data: { email: string; password: string }): Promise<User> {
-        const user = await this.getOne({ email: data.email, active: true, approved: true })
+        const user = await this.getOne({ email: data.email })
 
         const authorized = await compare(data.password, user.password)
 
         throwIf(not(authorized), Unauthorized)
+        throwIf(not(user.active), Inactive)
 
         return user
     }
