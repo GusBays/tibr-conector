@@ -21,6 +21,7 @@ export class UserService {
     async create(data: User): Promise<User> {
         const key = process.env.APP_KEY
 
+        data.active = data.type === UserType.ADMIN ? false : true
         data.token = sign({ email: data.email, type: data.type }, key)
         data.password = await hash(data.password, 10)
 
