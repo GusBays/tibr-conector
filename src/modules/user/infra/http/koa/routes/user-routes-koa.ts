@@ -11,7 +11,7 @@ const path = '/users'
 export async function userRoutesKoa(router: Router): Promise<void> {
     const { store, index, show, update, destroy, login } = userHandler()
 
-    router.post(path, auth, store)
+    router.post(path, store)
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
