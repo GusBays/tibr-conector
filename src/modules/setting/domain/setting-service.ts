@@ -21,7 +21,18 @@ export class SettingService {
         return container.resolve(SettingTypeEnum.SERVICE)
     }
 
-    async create(data: Setting): Promise<Setting> {
+    async createOrUpdate(data: Setting): Promise<Setting> {
+        let setting: Setting
+
+        try {
+            setting = await this.getOne({})
+        } catch (e) {}
+
+        if (isNotEmpty(setting)) return await this.update(data)
+        else return await this.create(data)
+    }
+
+    private async create(data: Setting): Promise<Setting> {
         return await DB.transaction(async () => {
             const setting = await this.repository.create(data)
 
@@ -37,7 +48,7 @@ export class SettingService {
         return setting
     }
 
-    async update(data: Setting): Promise<Setting> {
+    private async update(data: Setting): Promise<Setting> {
         return await DB.transaction(async () => {
             const setting = await this.repository.update(data)
 
