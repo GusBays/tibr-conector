@@ -4,6 +4,7 @@ import { Meta } from '../../../../../common/contracts/contracts'
 import { SequelizeHelper } from '../../../../../common/db/domain/sequelize/sequelize-helper'
 import { SequelizeRowsToPaginationAdapter } from '../../../../../common/db/infra/adapters/sequelize/sequelize-rows-to-pagination-adapter'
 import { isNotEmpty } from '../../../../../common/helpers/helper'
+import { ConnectionApi } from '../../../../setting/domain/connection/connection'
 import { Resource as IResource, ResourceFilter } from '../../../domain/resource'
 import { ResourceRepository } from '../../../domain/resource-repository'
 import { Resource } from './models/resource'
@@ -38,7 +39,7 @@ export class ResourceRepositorySequelize implements ResourceRepository {
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
         const where: WhereOptions<IResource> = {}
 
-        const { id, source, source_id, target, target_id, type, q } = filter
+        const { id, source, source_id, target, target_id, type, with_stock_on_agis, q } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
@@ -46,6 +47,20 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         if (isNotEmpty(target)) where.target = target
         if (isNotEmpty(target_id)) where.target_id = target_id
         if (isNotEmpty(type)) where.type = type
+        if (isNotEmpty(with_stock_on_agis)) {
+            where[Op.and] = [
+                { source: ConnectionApi.AGIS },
+                literal(`
+                    (SELECT SUM(stock.qty)
+                        FROM JSON_TABLE(
+                            source_payload, 
+                            '$.stock[*]' COLUMNS (
+                            qty INT PATH '$.qty'
+                        )
+                    ) AS stock) ${Boolean(+with_stock_on_agis) ? '>' : '<='} 0
+                `)
+            ]
+        }
         if (isNotEmpty(q)) {
             const pattern = `%${q}%`
             where[Op.or] = [
