@@ -55,4 +55,8 @@ export class BagyRequest extends AxiosRequest {
     async getCategories(params?: BagyParams): Promise<BagyPagination<BagyCategory>> {
         return await this.get<BagyPagination>('/categories', { params })
     }
+
+    async getCategory(id: number): Promise<BagyCategory> {
+        return await this.get<BagyCategory>(`/categories/${id}`)
+    }
 }

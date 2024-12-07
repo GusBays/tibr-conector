@@ -157,6 +157,19 @@ export class SettingService {
         return data
     }
 
+    async getCategory(id: number): Promise<BagyCategory> {
+        const setting = await this.getOne({})
+
+        const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
+        const bagy = setting.connections.find(byApi)
+
+        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return
+
+        const request = new BagyRequest(bagy.config.token)
+
+        return await request.getCategory(id)
+    }
+
     private async setConnections(connections: Connection[], setting: Setting): Promise<void> {
         if (isEmpty(connections)) return
 
