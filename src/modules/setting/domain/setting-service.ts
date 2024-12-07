@@ -3,6 +3,7 @@ import { DB } from '../../../common/db/domain/db'
 import { NotFound } from '../../../common/exceptions/not-found'
 import { isEmpty, isNotEmpty, isUndefined, not, throwIf } from '../../../common/helpers/helper'
 import { BagyAttribute, BagyAttributeValue } from '../../bagy/domain/bagy-attribute'
+import { BagyCategory } from '../../bagy/domain/bagy-category'
 import { BagyWebhook, BagyWebhookResource } from '../../bagy/domain/bagy-webhook'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { Connection, ConnectionApi, ConnectionTypeEnum } from './connection/connection'
@@ -129,6 +130,26 @@ export class SettingService {
         } as BagyWebhook
 
         await request.createWebhook(webhook)
+    }
+
+    async getCategories(filter: SettingFilter): Promise<BagyCategory[]> {
+        const setting = await this.getOne(filter)
+
+        const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
+        const bagy = setting.connections.find(byApi)
+
+        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return []
+
+        const request = new BagyRequest(bagy.config.token)
+
+        const { data, meta } = await request.getCategories({ page: 1, per_page: 25 })
+
+        for (let i = 2; i <= meta.last_page; i++) {
+            const res = await request.getCategories({ page: i, per_page: 25 })
+            data.push(...res.data)
+        }
+
+        return data
     }
 
     private async setConnections(connections: Connection[], setting: Setting): Promise<void> {

@@ -1,6 +1,7 @@
 import { Agent } from 'https'
 import { AxiosRequest } from '../../../../../common/http/domain/axios/axios-request'
 import { BagyAttribute } from '../../../domain/bagy-attribute'
+import { BagyCategory } from '../../../domain/bagy-category'
 import { BagyPagination, BagyParams } from '../../../domain/bagy-pagination'
 import { BagyProduct } from '../../../domain/bagy-product'
 import { BagyWebhook } from '../../../domain/bagy-webhook'
@@ -49,5 +50,9 @@ export class BagyRequest extends AxiosRequest {
 
     async createWebhook(data: BagyWebhook): Promise<BagyWebhook> {
         return await this.post<BagyWebhook, BagyWebhook>('/webhooks', data)
+    }
+
+    async getCategories(params?: BagyParams): Promise<BagyPagination<BagyCategory>> {
+        return await this.get<BagyPagination>('/categories', { params })
     }
 }
