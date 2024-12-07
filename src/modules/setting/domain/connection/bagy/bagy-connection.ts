@@ -12,4 +12,5 @@ export interface BagyImporter extends ImporterConnection {
 
 interface BagyConfig {
     token: string
+    category_default_id: number
 }

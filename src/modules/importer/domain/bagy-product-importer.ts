@@ -49,7 +49,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
                 ({ id: variation.id, balance: resource.config.balance } as BagyVariation)
             product.variations = (resource.target_payload as BagyProduct).variations.map(toBalance)
         } else {
-            product.category_default_id = resource.config.category_default_id
+            product.category_default_id = resource.config.category_default_id ?? this.importer.config.category_default_id
             product.name = resource.config.name
             product.short_description = resource.config.short_description
             product.description = resource.config.description
@@ -71,11 +71,8 @@ export class BagyProductImporter extends Importer<BagyImporter> {
             product.ncm = resource.config.ncm
 
             const getCategoryIds = (): number[] => {
-                const { category_ids, category_default_id } = resource.config
-
-                if (isNotEmpty(category_ids)) return category_ids
-                else if (isNotEmpty(category_default_id)) return [category_default_id]
-                else return null
+                const categoryDefaultId = resource.config.category_default_id ?? this.importer.config.category_default_id
+                return isNotEmpty(categoryDefaultId) ? [categoryDefaultId] : []
             }
             product.category_ids = getCategoryIds()
 

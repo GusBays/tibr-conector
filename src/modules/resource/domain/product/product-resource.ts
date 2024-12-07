@@ -21,7 +21,6 @@ export interface ProductResourceConfig extends Dimensions {
     partial_update: boolean
     allowed_to_import: boolean
     images: ProductImage[]
-    category_ids?: number[]
     feature_ids?: number[]
 }
 

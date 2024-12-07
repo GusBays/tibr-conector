@@ -171,7 +171,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
 
         return {
             name: getFromConfig('name', item.name),
-            category_default_id: getFromConfig('category_default_id', this.fetcher.config.category_default_id),
+            category_default_id: getFromConfig('category_default_id'),
             description: getFromConfig('description', getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION)),
             short_description: getFromConfig(
                 'short_description',

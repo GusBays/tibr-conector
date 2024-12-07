@@ -14,6 +14,5 @@ interface AgisConfig {
     markup: number
     token: string
     min_price: number
-    category_default_id: number
     weight_default: number
 }
