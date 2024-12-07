@@ -13,9 +13,9 @@ export async function settingRoutesKoa(router: Router): Promise<void> {
 
     router.post(path, auth, storeOrUpdate)
     router.get(path, auth, show)
-    router.post(`${path}/:id/sync-price-groups`, auth, syncPricingGroups)
-    router.post(`${path}/:id/sync-webhooks`, auth, syncWebhooks)
-    router.get(`${path}/:id/categories`, auth, getCategories)
+    router.post(`${path}/sync-price-groups`, auth, syncPricingGroups)
+    router.post(`${path}/sync-webhooks`, auth, syncWebhooks)
+    router.get(`${path}/categories`, auth, getCategories)
 }
 
 function settingHandler() {

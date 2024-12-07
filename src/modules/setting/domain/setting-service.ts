@@ -117,10 +117,15 @@ export class SettingService {
 
         const request = new BagyRequest(bagy.config.token)
 
-        const webhooks = await request.getWebhooks({ resource: 'variations' })
+        const { data, meta } = await request.getWebhooks({ page: 1, per_page: 150, resource: 'variations' })
+
+        for (let i = 2; i <= meta.last_page; i++) {
+            const res = await request.getWebhooks({ page: i, per_page: 150, resource: 'variations' })
+            data.push(...res.data)
+        }
 
         const byUrl = (webhook: BagyWebhook) => webhook.url.includes(process.env.APP_URL)
-        const webhooksOnApp = webhooks.data.filter(byUrl)
+        const webhooksOnApp = data.filter(byUrl)
 
         if (isNotEmpty(webhooksOnApp)) return
 
@@ -142,10 +147,10 @@ export class SettingService {
 
         const request = new BagyRequest(bagy.config.token)
 
-        const { data, meta } = await request.getCategories({ page: 1, per_page: 25 })
+        const { data, meta } = await request.getCategories({ page: 1, per_page: 150 })
 
         for (let i = 2; i <= meta.last_page; i++) {
-            const res = await request.getCategories({ page: i, per_page: 25 })
+            const res = await request.getCategories({ page: i, per_page: 150 })
             data.push(...res.data)
         }
 
