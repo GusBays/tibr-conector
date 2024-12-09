@@ -17,19 +17,21 @@ export class Notification {
     static transporter: Transporter
 
     static async send(data: NotificationData): Promise<void> {
+        const toRegister = ({ name, helper }) => Handlebars.registerHelper(name, helper)
+        this.getHelpers(data).forEach(toRegister)
+
         if (!this.transporter) this.getTransporter()
 
         this.transporter.use('compile', hbs(this.getTemplateOptions(data)))
 
-        await this.transporter.sendMail(this.getOptionsFrom(data))
+        try {
+            await this.transporter.sendMail(this.getOptionsFrom(data))
+        } catch (e) {}
     }
 
     static render(data: NotificationData): string {
-        const helpers = this.getHelpers(data)
-
-        const register = ({ name, helper }: { name: string; helper: (...args: any) => any }) =>
-            Handlebars.registerHelper(name, helper)
-        helpers.forEach(register)
+        const register = ({ name, helper }) => Handlebars.registerHelper(name, helper)
+        this.getHelpers(data).forEach(register)
 
         const templatePath = resolve('src', 'common', 'notification', 'infra', 'handlebars', `${data.templatePath}.hbs`)
         const templateSource = fs.readFileSync(templatePath, 'utf-8')
@@ -55,10 +57,9 @@ export class Notification {
                 extname: '.hbs',
                 partialsDir: resolve('src', 'common', 'notification', 'infra', 'handlebars', 'partials'),
                 layoutsDir: resolve('src', 'common', 'notification', 'infra', 'handlebars'),
-                defaultLayout: '',
-                helpers: this.getHelpers(data).map(h => h.helper) as unknown as Record<string, unknown>
+                defaultLayout: ''
             },
-            viewPath: resolve('src', 'common', 'notification', 'infra', 'handlebars', data.templatePath),
+            viewPath: resolve('src', 'common', 'notification', 'infra', 'handlebars'),
             extName: '.hbs'
         }
     }
@@ -93,7 +94,7 @@ export class Notification {
         return [
             {
                 name: 'capitalize',
-                helper: (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
+                helper: (str: string) => (str ? str.charAt(0).toUpperCase() + str.slice(1) : '')
             },
             {
                 name: 'formatDate',
