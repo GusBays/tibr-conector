@@ -56,9 +56,9 @@ export class BagyProductImporter extends Importer<BagyImporter> {
 
             if (isAgisFetcher(fetcher)) {
                 const markup = isNotEmpty(resource.config.markup) ? resource.config.markup : fetcher.config.markup
-                product.price = resource.config.price * (markup ?? 1)
+                product.price = +(resource.config.price * (markup ?? 1)).toFixed(2)
             } else {
-                product.price = resource.config.price
+                product.price = +resource.config.price.toFixed(2)
             }
 
             product.weight = resource.config.weight
