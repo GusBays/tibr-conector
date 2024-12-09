@@ -56,7 +56,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
 
             if (isAgisFetcher(fetcher)) {
                 const markup = isNotEmpty(resource.config.markup) ? resource.config.markup : fetcher.config.markup
-                product.price = resource.config.price * markup
+                product.price = resource.config.price * (markup ?? 1)
             } else {
                 product.price = resource.config.price
             }
@@ -132,7 +132,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
     private afterCreate(resource: ProductResource): void {
         if (isEmpty(resource.target_payload)) return
 
-        const { images, variations } = resource.target_payload as BagyProduct
+        const { images } = resource.target_payload as BagyProduct
 
         if (isNotEmpty(resource.config.images) && isNotEmpty(images)) {
             const setTargetId = (image: ProductImage) => {

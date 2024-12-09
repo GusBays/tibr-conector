@@ -134,7 +134,7 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
                 width: toFloat(width),
                 height: toFloat(height),
                 depth: toFloat(depth),
-                weight: toFloat(weight)
+                weight: toFloat(weight ?? this.fetcher.config.weight_default)
             }
         }
 
@@ -148,13 +148,13 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         const getImages = (): { images: ProductImage[] } => {
             const images = getFromConfig<ProductImage[]>('images', [])
 
-            const imagesFromItem = item.media_gallery_entries
+            const imagesFromAgis = item.media_gallery_entries
 
             const byNotInConfig = (agisImage: AgisProductMediaGallery) => {
                 const byId = (productImage: ProductImage) => agisImage.id === productImage.source_id
                 return isEmpty(images.find(byId))
             }
-            const newImages = imagesFromItem.filter(byNotInConfig)
+            const newImages = imagesFromAgis.filter(byNotInConfig)
 
             if (isEmpty(newImages)) return { images }
 
