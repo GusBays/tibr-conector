@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios'
 import { format } from 'date-fns'
 import { isEmpty, isNotEmpty, not } from '../../../common/helpers/helper'
 import { Notification } from '../../../common/notification/domain/notification'
@@ -5,6 +6,8 @@ import { FetchHistory, History, HistoryExtra, HistoryType } from '../../history/
 import { HistoryService } from '../../history/domain/history-service'
 import { Importer } from '../../importer/domain/importer'
 import { ImporterFactory } from '../../importer/domain/importer-factory'
+import { Log } from '../../log/domain/log'
+import { LogService } from '../../log/domain/log-service'
 import { Resource, ResourceFilter, ResourceType } from '../../resource/domain/resource'
 import { isProductResource } from '../../resource/domain/resource-helper'
 import { ResourceService } from '../../resource/domain/resource-service'
@@ -17,6 +20,7 @@ import { UserService } from '../../user/domain/user-service'
 export abstract class Fetcher<F extends FetcherConnection = any> {
     protected resourceService = ResourceService.getInstance()
     protected historyService = HistoryService.getInstance()
+    protected logService = LogService.getInstance()
 
     protected importers: Importer[] = []
 
@@ -109,6 +113,13 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         this.importers.push(importer)
 
         return importer
+    }
+
+    protected async log(e: Error, resource?: Resource): Promise<void> {
+        const message = e instanceof AxiosError ? e.response.data : { message: e.message, stack: e.stack }
+        const connection_id = this.fetcher.id
+        const resource_id = resource.id
+        await this.logService.create({ message, connection_id, resource_id } as Log)
     }
 
     private async createHistory(started_at, extra: HistoryExtra): Promise<History> {

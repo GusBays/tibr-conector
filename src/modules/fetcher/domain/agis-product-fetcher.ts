@@ -49,6 +49,8 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             const res = await this.request.getProducts(pagination(1, 1))
             total = res.total_count
         } catch (e) {
+            this.log(e)
+
             if (e instanceof AxiosError && e.response?.status === 401) {
                 throw new UnprocessableEntity('agis', { token: 'unauthorized' })
             } else throw e
