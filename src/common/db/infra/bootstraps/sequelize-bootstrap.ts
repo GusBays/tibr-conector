@@ -2,6 +2,7 @@ import { getNamespace } from 'cls-hooked'
 import { Sequelize, SequelizeOptions } from 'sequelize-typescript'
 import { container } from 'tsyringe'
 import { History } from '../../../../modules/history/infra/repositories/sequelize/models/history'
+import { Log } from '../../../../modules/log/infra/repositories/sequelize/models/log'
 import { Resource } from '../../../../modules/resource/infra/repositories/sequelize/models/resource'
 import { Connection } from '../../../../modules/setting/infra/repositories/sequelize/models/connection'
 import { Setting } from '../../../../modules/setting/infra/repositories/sequelize/models/setting'
@@ -28,7 +29,7 @@ export async function sequelizeBootstrap(): Promise<void> {
     const sequelize = container.resolve<Sequelize>(DbTypeEnum.CONNECTION)
 
     await sequelize.authenticate()
-    sequelize.addModels([Connection, History, Resource, Setting, User])
+    sequelize.addModels([Connection, History, Log, Resource, Setting, User])
 
     await sequelize.sync()
 }
