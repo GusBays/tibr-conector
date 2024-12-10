@@ -81,8 +81,6 @@ async function run(): Promise<void> {
         await LogService.getInstance().delete({ created_before })
     }
     schedule('0 4 * * *', clearLogsJob)
-
-    await fetchAndImportProductsJob()
 }
 
 run()
