@@ -26,6 +26,10 @@ export enum ConnectionApi {
     BAGY = 'bagy'
 }
 
+export interface ConnectionBelongs {
+    connection_id: number
+}
+
 export interface ConnectionFilter extends Partial<Model>, Partial<SettingBelongs>, Filter {
     type?: ConnectionType
     api?: ConnectionApi

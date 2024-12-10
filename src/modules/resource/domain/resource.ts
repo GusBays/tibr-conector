@@ -11,6 +11,10 @@ export interface Resource extends Model, Timestamps {
     target_payload: Record<string, any>
 }
 
+export interface ResourceBelongs {
+    resource_id: number
+}
+
 export interface ResourceFilter extends Partial<Model>, Filter {
     source?: string
     source_id?: number
