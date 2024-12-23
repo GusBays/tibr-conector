@@ -43,5 +43,5 @@ jobs:
                   port: ${{ secrets.PORT }}
                   script: |
                       cd /www/tibr-conector
-                      pm2 stop tibr-conector || echo "No previous PM2 process found for tibr-conector"
-                      pm2 start npm --name 'tibr-conector' -- run start
+                      /root/.nvm/versions/node/v22.12.0/bin/pm2 stop tibr-conector || echo "No previous PM2 process found for tibr-conector"
+                      /root/.nvm/versions/node/v22.12.0/bin/pm2 start npm --name 'tibr-conector' -- run start
