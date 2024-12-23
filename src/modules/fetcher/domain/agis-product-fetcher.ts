@@ -46,8 +46,8 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         let total: number
 
         try {
-            const res = await this.request.getProducts(pagination(1, 1))
-            total = res.total_count
+            // const res = await this.request.getProducts(pagination(1, 1))
+            total = 50
         } catch (e) {
             this.log(e)
 
