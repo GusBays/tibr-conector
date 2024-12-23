@@ -39,12 +39,13 @@ export class UserService {
     }
 
     async update(data: User): Promise<User> {
+        const user = await this.getOne({ id: data.id })
+
         if (isNotEmpty(data.email) || isNotEmpty(data.type)) {
-            const user = await this.getOne({ id: data.id })
             data.token = sign({ email: data.email ?? user.email, type: data.type ?? user.type }, process.env.APP_KEY)
         }
 
-        if (isNotEmpty(data.password)) data.password = await hash(data.password, 10)
+        if (isNotEmpty(data.password) && data.password !== user.password) data.password = await hash(data.password, 10)
 
         return await this.repository.update(data)
     }
