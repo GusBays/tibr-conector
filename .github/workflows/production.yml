@@ -1,0 +1,47 @@
+name: 'Deploy'
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: 'Download new version'
+              uses: actions/checkout@v4
+
+            - name: 'Copy to VPS'
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ secrets.HOST }}
+                  username: ${{ secrets.USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: ${{ secrets.PORT }}
+                  source: '.'
+                  target: '/www/tibr-conector'
+
+            - name: 'Install dependencies'
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.HOST }}
+                  username: ${{ secrets.USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: ${{ secrets.PORT }}
+                  script: |
+                      cd /www/tibr-conector
+                      npm install --no-dev
+
+            - name: 'Restart application'
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.HOST }}
+                  username: ${{ secrets.USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  port: ${{ secrets.PORT }}
+                  script: |
+                      cd /www/tibr-conector
+                      pm2 stop tibr-conector || echo "No previous PM2 process found for tibr-conector"
+                      pm2 start npm --name 'tibr-conector' -- run start
