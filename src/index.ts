@@ -67,7 +67,7 @@ async function run(): Promise<void> {
     const fetchAndImportProductsJob = async (): Promise<void> => {
         const setting = await SettingService.getInstance().getOne({})
 
-        const byFetcher = (connection: Connection) => isFetcher(connection)
+        const byFetcher = (connection: Connection) => isFetcher(connection) && connection.active
         const toFetch = async (fetcher: FetcherConnection) =>
             await FetcherFactory.getInstance(ResourceType.PRODUCT, setting, fetcher).fetch()
         await Promise.all(setting.connections.filter(byFetcher).map(toFetch))
