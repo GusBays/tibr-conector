@@ -11,6 +11,8 @@ import { sequelizeBootstrap } from './common/db/infra/bootstraps/sequelize-boots
 import { errorHandler } from './common/http/domain/koa/middlewares/error-handler-koa'
 import { notificationRoutesKoa } from './common/notification/infra/http/koa/notification-routes-koa'
 import { FetcherFactory } from './modules/fetcher/domain/fetcher-factory'
+import { fetcherBootstrap } from './modules/fetcher/infra/bootstraps/fetcher-bootstrap'
+import { fetcherRoutesKoa } from './modules/fetcher/infra/http/koa/routes/fetcher-routes-koa'
 import { historyBootstrap } from './modules/history/infra/bootstraps/history-bootstrap'
 import { historyRoutesKoa } from './modules/history/infra/http/koa/routes/history-routes-koa'
 import { LogService } from './modules/log/domain/log-service'
@@ -35,6 +37,7 @@ async function run(): Promise<void> {
 
     await Promise.all([
         connectionBootstrap(),
+        fetcherBootstrap(),
         historyBootstrap(),
         logBootstrap(),
         resourceBootstrap(),
@@ -46,6 +49,7 @@ async function run(): Promise<void> {
     const router = new Router()
     const toRegister = async (route: Route) => await route(router)
     const routes = [
+        fetcherRoutesKoa,
         historyRoutesKoa,
         logRoutesKoa,
         resourceRoutesKoa,

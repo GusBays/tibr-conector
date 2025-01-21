@@ -143,7 +143,7 @@ export class SettingService {
         const byApi = (connection: Connection) => ConnectionApi.BAGY === connection.api
         const bagy = setting.connections.find(byApi)
 
-        if (isEmpty(bagy) || not(bagy.active) || isEmpty(bagy.config.token)) return []
+        if (isEmpty(bagy) || isEmpty(bagy.config.token)) return []
 
         const request = new BagyRequest(bagy.config.token)
 
