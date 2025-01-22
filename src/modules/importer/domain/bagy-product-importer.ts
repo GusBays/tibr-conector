@@ -41,6 +41,14 @@ export class BagyProductImporter extends Importer<BagyImporter> {
         return resource
     }
 
+    async deleteImage(productId: number, imageId: number): Promise<void> {
+        try {
+            await this.request.deleteProductImage(productId, imageId)
+        } catch (e) {
+            this.log(e)
+        }
+    }
+
     private toBagyProduct(resource: ProductResource): BagyProduct {
         const byApi = (connection: Connection) => connection.api === resource.source && isFetcher(connection)
         const fetcher = this.setting.connections.find(byApi) as FetcherConnection

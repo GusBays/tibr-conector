@@ -12,6 +12,7 @@ export abstract class Importer<I extends ImporterConnection = any> {
     constructor(protected setting: Setting, protected importer: I) {}
 
     abstract importOne(resource: Resource): Promise<Resource>
+    abstract deleteImage(targetId: number, imageId: number): Promise<void>
 
     protected async log(e: Error, resource?: Resource, payload?: Record<string, any>): Promise<void> {
         const message = e instanceof AxiosError ? e.response.data : { message: e.message, stack: e.stack }

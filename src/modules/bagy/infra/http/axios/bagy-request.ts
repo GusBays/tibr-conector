@@ -32,6 +32,10 @@ export class BagyRequest extends AxiosRequest {
         return await this.put<BagyProduct, BagyProduct>(`/products/${data.id}`, data)
     }
 
+    async deleteProductImage(productId: number, imageId: number): Promise<void> {
+        await this.delete(`/products/${productId}/images/${imageId}`)
+    }
+
     async getAttributes(params: BagyParams): Promise<BagyPagination<BagyAttribute>> {
         return await this.get<BagyPagination>('/attributes', { params })
     }

@@ -13,7 +13,7 @@ import { ResourceService } from '../../../../domain/resource-service'
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update, sync, getImage, createImage, webhook } = resourceHandler()
+    const { index, show, update, sync, getImage, createImage, deleteImage, webhook } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
@@ -27,6 +27,7 @@ export async function resourceRoutesKoa(router: Router): Promise<void> {
         }),
         createImage
     )
+    router.delete(`${path}/:id/images/:image_id`, deleteImage)
     router.post(`${path}/:api/webhook`, webhook)
 
     // open route
@@ -74,11 +75,17 @@ function resourceHandler() {
         KoaResponse.created(ctx, body)
     }
 
+    const deleteImage = async (ctx: Context): Promise<void> => {
+        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: `${UUID}.${string}` }>(ctx)
+        const body = await service.deleteImage(filter)
+        return KoaResponse.success(ctx, body)
+    }
+
     const webhook = async (ctx: Context): Promise<void> => {
         const { api } = KoaHelper.extractParams<{ api: string }>(ctx)
         const body = KoaHelper.extractBody<BagyWebhookPayload>(ctx)
         await service.webhook(api as ConnectionApi, body)
     }
 
-    return { index, show, update, sync, getImage, createImage, webhook }
+    return { index, show, update, sync, getImage, createImage, deleteImage, webhook }
 }

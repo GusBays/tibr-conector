@@ -109,7 +109,7 @@ export class ResourceService {
         }
     }
 
-    async deleteImage(filter: ResourceFilter & { image_id: UUID }): Promise<void> {
+    async deleteImage(filter: ResourceFilter & { image_id: `${UUID}.${string}` }): Promise<Resource> {
         const resource = await this.getOne(filter)
 
         if (false === isProductResource(resource)) throw new UnprocessableEntity('resource', { image: 'not_allowed' })
@@ -117,15 +117,26 @@ export class ResourceService {
         const { images } = resource.config
 
         const byId = (image: ProductImage) => image.id === filter.image_id
-        const index = images.findIndex(byId)
+        const image = images.find(byId)
 
-        throwIf(-1 === index, NotFound, ['image'])
+        throwIf(isEmpty(image), NotFound, ['image'])
 
-        images.splice(index, 1)
+        images.splice(images.indexOf(image), 1)
 
         await FileSystem.delete(`resources/${resource.type}/images/${filter.image_id}`)
 
-        await this.update(resource)
+        if (image.target_id) {
+            const setting = await SettingService.getInstance().getOne({})
+            const byTarget = (connection: Connection) => connection.api === resource.target
+            const importer = setting.connections.find(byTarget)
+
+            await ImporterFactory.getInstance(resource.type, setting, importer as ImporterConnection).deleteImage(
+                resource.target_id,
+                image.target_id
+            )
+        }
+
+        return await this.update(resource)
     }
 
     async webhook(api: ConnectionApi, payload: BagyWebhookPayload): Promise<void> {

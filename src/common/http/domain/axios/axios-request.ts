@@ -21,4 +21,8 @@ export class AxiosRequest {
         const response = await this.client.put<R>(path, data)
         return response.data
     }
+
+    async delete(path: string): Promise<void> {
+        await this.client.delete(path)
+    }
 }
