@@ -109,7 +109,7 @@ export class ResourceService {
         }
     }
 
-    async deleteImage(filter: ResourceFilter & { image_id: `${UUID}.${string}` }): Promise<Resource> {
+    async deleteImage(filter: ResourceFilter & { image_id: UUID }): Promise<Resource> {
         const resource = await this.getOne(filter)
 
         if (false === isProductResource(resource)) throw new UnprocessableEntity('resource', { image: 'not_allowed' })
@@ -123,7 +123,9 @@ export class ResourceService {
 
         images.splice(images.indexOf(image), 1)
 
-        await FileSystem.delete(`resources/${resource.type}/images/${filter.image_id}`)
+        const name = image.src.split('/').pop()
+
+        await FileSystem.delete(`resources/${resource.type}/images/${name}`)
 
         if (image.target_id) {
             const setting = await SettingService.getInstance().getOne({})

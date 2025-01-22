@@ -76,7 +76,7 @@ function resourceHandler() {
     }
 
     const deleteImage = async (ctx: Context): Promise<void> => {
-        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: `${UUID}.${string}` }>(ctx)
+        const filter = KoaHelper.extractParams<ResourceFilter & { image_id: UUID }>(ctx)
         const body = await service.deleteImage(filter)
         return KoaResponse.success(ctx, body)
     }
