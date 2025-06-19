@@ -1,5 +1,5 @@
-import { Router } from '@koa/router'
 import { Context } from 'koa'
+import Router from 'koa-router'
 import { KoaHelper } from '../../../../../../common/http/domain/koa/koa-helper'
 import { KoaResponse } from '../../../../../../common/http/domain/koa/koa-response'
 import { LogFilter } from '../../../../domain/log'

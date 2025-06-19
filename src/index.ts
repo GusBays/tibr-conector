@@ -1,10 +1,10 @@
 import cors from '@koa/cors'
-import Router from '@koa/router'
 import { createNamespace } from 'cls-hooked'
 import { format, subDays } from 'date-fns'
 import { config } from 'dotenv'
-import Koa from 'koa'
+import Koa, { Context } from 'koa'
 import bodyParser from 'koa-bodyparser'
+import Router from 'koa-router'
 import { schedule } from 'node-cron'
 import 'reflect-metadata'
 import { sequelizeBootstrap } from './common/db/infra/bootstraps/sequelize-bootstrap'
@@ -30,6 +30,8 @@ import { settingRoutesKoa } from './modules/setting/infra/http/koa/routes/settin
 import { userBootstrap } from './modules/user/infra/bootstraps/user-bootstrap'
 import { userRoutesKoa } from './modules/user/infra/http/koa/routes/user-routes-koa'
 
+process.env.TZ = 'America/Sao_Paulo'
+
 type Route = (router: Router) => Promise<void>
 async function run(): Promise<void> {
     config()
@@ -46,7 +48,12 @@ async function run(): Promise<void> {
         userBootstrap()
     ])
 
-    const router = new Router()
+    const router = new Router().prefix('/api')
+
+    router.get('/health-check', (ctx: Context) => {
+        ctx.body = { status: 'healthy' }
+    })
+
     const toRegister = async (route: Route) => await route(router)
     const routes = [
         fetcherRoutesKoa,
@@ -62,7 +69,7 @@ async function run(): Promise<void> {
     const app = new Koa()
     app.use(cors())
         .use(bodyParser())
-        .use(async (ctx, next) => await namespace.runAndReturn(async () => await next()))
+        .use(async (ctx, next) => await namespace.runAndReturn(next))
         .use(errorHandler)
         .use(router.routes())
         .use(router.allowedMethods())

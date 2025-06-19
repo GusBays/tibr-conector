@@ -1,5 +1,5 @@
-import { Router } from '@koa/router'
 import { Context } from 'koa'
+import Router from 'koa-router'
 import { KoaHelper } from '../../../../http/domain/koa/koa-helper'
 import { Notification, NotificationData } from '../../../domain/notification'
 

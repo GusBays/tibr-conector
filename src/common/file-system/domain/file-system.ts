@@ -25,7 +25,7 @@ export class FileSystem {
 
             file.pipe(stream)
 
-            stream.on('finish', resolve)
+            stream.on('finish', () => resolve)
             stream.on('error', reject)
         })
 
