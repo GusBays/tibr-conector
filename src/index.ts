@@ -1,7 +1,7 @@
 import cors from '@koa/cors'
 import { createNamespace } from 'cls-hooked'
 import { format, subDays } from 'date-fns'
-import { config } from 'dotenv'
+import 'dotenv'
 import Koa, { Context } from 'koa'
 import bodyParser from 'koa-bodyparser'
 import Router from 'koa-router'
@@ -34,7 +34,6 @@ process.env.TZ = 'America/Sao_Paulo'
 
 type Route = (router: Router) => Promise<void>
 async function run(): Promise<void> {
-    config()
     const namespace = createNamespace('tibr-connector')
 
     await Promise.all([
@@ -48,9 +47,7 @@ async function run(): Promise<void> {
         userBootstrap()
     ])
 
-    const router = new Router().prefix('/api')
-
-    router.get('/health-check', (ctx: Context) => {
+    const router = new Router().prefix('/api').get('/health-check', (ctx: Context) => {
         ctx.body = { status: 'healthy' }
     })
 
@@ -66,6 +63,8 @@ async function run(): Promise<void> {
     ]
     await Promise.all(routes.map(toRegister))
 
+    const port = process.env.PORT
+
     const app = new Koa()
     app.use(cors())
         .use(bodyParser())
@@ -73,7 +72,7 @@ async function run(): Promise<void> {
         .use(errorHandler)
         .use(router.routes())
         .use(router.allowedMethods())
-        .listen(4001, () => console.log('Running on 4001'))
+        .listen(port, () => console.log(`Running on ${port}`))
 
     const fetchAndImportProductsJob = async (): Promise<void> => {
         const setting = await SettingService.getInstance().getOne({})
