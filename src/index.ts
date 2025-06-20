@@ -47,7 +47,7 @@ async function run(): Promise<void> {
         userBootstrap()
     ])
 
-    const router = new Router().prefix('/api').get('/health-check', (ctx: Context) => {
+    const router = new Router().get('/health-check', (ctx: Context) => {
         ctx.body = { status: 'healthy' }
     })
 
