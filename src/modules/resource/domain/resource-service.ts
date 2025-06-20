@@ -26,16 +26,13 @@ export class ResourceService {
         return container.resolve(ResourceTypeEnum.SERVICE)
     }
 
-    async create(data: Resource): Promise<Resource> {
-        if (isProductResource(data) && isNotEmpty(data.config.images)) {
-            const toSave = async (image: ProductImage) => {
-                const res = await FileSystem.save(image.src, `resources/${ResourceType.PRODUCT}/images/${image.id}`)
-                image.src = res
-                return image
-            }
-            data.config.images = await Promise.all(data.config.images.map(toSave))
-        }
+    async insert(data: Resource[]): Promise<Resource[]> {
+        await Promise.all(data.map(r => this.createImagesIfNeeded(r)))
+        return await this.repository.insert(data)
+    }
 
+    async create(data: Resource): Promise<Resource> {
+        await this.createImagesIfNeeded(data)
         return await this.repository.create(data)
     }
 
@@ -173,5 +170,19 @@ export class ResourceService {
 
         const target_payload = await request.updateProduct(product)
         await this.update({ ...resource, target_payload })
+    }
+
+    /**
+     * Create resource images on filesystem if needed
+     */
+    private async createImagesIfNeeded(resource: Resource): Promise<void> {
+        if (false === isProductResource(resource) || isEmpty(resource.config.images)) return
+
+        const toSave = async (image: ProductImage) => {
+            const res = await FileSystem.save(image.src, `resources/${ResourceType.PRODUCT}/images/${image.id}`)
+            image.src = res
+            return image
+        }
+        resource.config.images = await Promise.all(resource.config.images.map(toSave))
     }
 }

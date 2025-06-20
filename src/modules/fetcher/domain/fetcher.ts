@@ -14,15 +14,15 @@ import { ResourceService } from '../../resource/domain/resource-service'
 import { Connection, ConnectionApi, FetcherConnection, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { Setting } from '../../setting/domain/setting'
-import { User, UserType } from '../../user/domain/user'
+import { UserType } from '../../user/domain/user'
 import { UserService } from '../../user/domain/user-service'
 
 export abstract class Fetcher<F extends FetcherConnection = any> {
-    protected resourceService = ResourceService.getInstance()
-    protected historyService = HistoryService.getInstance()
-    protected logService = LogService.getInstance()
+    protected readonly resourceService = ResourceService.getInstance()
+    protected readonly historyService = HistoryService.getInstance()
+    protected readonly logService = LogService.getInstance()
 
-    protected importers: Importer[] = []
+    protected readonly importers: Importer[] = []
 
     constructor(protected setting: Setting, protected fetcher: F) {}
 
@@ -37,51 +37,66 @@ export abstract class Fetcher<F extends FetcherConnection = any> {
         const stated_at = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
         let [created, updated, errors] = [0, 0, 0]
 
-        const resources = await this.fetchDataBy(targets)
-
-        if (isEmpty(resources)) return
-
         const importToTarget = async (resource: Resource) => {
             const allowedToImport = false === isProductResource(resource) || resource.config.allowed_to_import
-            const isCreation = isEmpty(resource.target_id)
 
-            if (allowedToImport) {
-                try {
-                    const importer = this.getImporterBy(resource, targets)
-                    await importer.importOne(resource)
+            if (not(allowedToImport)) return resource
 
-                    if (isCreation) created++
-                    else updated++
-                } catch (e) {
-                    errors++
-                }
+            try {
+                await this.getImporterBy(resource, targets).importOne(resource)
+
+                if (isEmpty(resource.target_id)) created++
+                else updated++
+            } catch (e) {
+                this.log(e)
+                errors++
+            } finally {
+                return resource
             }
-
-            isEmpty(resource.id) ? await this.resourceService.create(resource) : await this.resourceService.update(resource)
         }
-        await Promise.all(resources.map(importToTarget))
 
-        const history = await this.createHistory(stated_at, { created, updated, errors })
+        let page = 1
+        let shouldContinue = true
+
+        while (shouldContinue) {
+            const { resources, hasNextPage } = await this.fetchDataBy(targets, page)
+
+            if (isEmpty(resources)) break
+
+            const imported = await Promise.all(resources.map(importToTarget))
+
+            await this.resourceService.insert(imported)
+
+            page++
+            shouldContinue = hasNextPage
+        }
 
         const users = await UserService.getInstance().getAll({ active: true })
 
-        const byOwner = (user: User) => UserType.OWNER === user.type
-        const to = users.find(byOwner)?.email
+        let to: string
+        let cc: string[] = []
 
-        const byNotOwner = (user: User) => UserType.OWNER !== user.type
-        const toEmail = (user: User) => user.email
-        const cc = users.filter(byNotOwner).map(toEmail).join(',')
+        for (const user of users) {
+            if (UserType.OWNER === user.type) {
+                to = user.email
+            } else {
+                cc.push(user.email)
+            }
+        }
 
         await Notification.send({
             to,
             cc,
             subject: 'Importação de produtos concluída!',
             templatePath: 'import-concluded',
-            context: history
+            context: await this.createHistory(stated_at, { created, updated, errors })
         })
     }
 
-    protected abstract fetchDataBy(targets: ImporterConnection[]): Promise<Resource[]>
+    protected abstract fetchDataBy(
+        targets: ImporterConnection[],
+        page: number
+    ): Promise<{ resources: Resource[]; hasNextPage: boolean }>
 
     protected async getResourceBy<T extends Resource>(
         source_id: number,

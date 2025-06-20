@@ -23,20 +23,15 @@ export class BagyProductImporter extends Importer<BagyImporter> {
     async importOne(resource: ProductResource): Promise<ProductResource> {
         const product = this.toBagyProduct(resource)
 
-        try {
-            if (isNotEmpty(product.id)) {
-                const target_payload = await this.request.updateProduct(product)
-                Object.assign(resource, { target_payload })
-            } else {
-                const res = await this.request.createProduct(product)
-                Object.assign(resource, { target_id: res.id, target_payload: res })
-            }
-
-            this.afterCreate(resource)
-        } catch (e) {
-            this.log(e, resource, product)
-            throw e
+        if (isNotEmpty(product.id)) {
+            const target_payload = await this.request.updateProduct(product)
+            Object.assign(resource, { target_payload })
+        } else {
+            const res = await this.request.createProduct(product)
+            Object.assign(resource, { target_id: res.id, target_payload: res })
         }
+
+        this.afterCreate(resource)
 
         return resource
     }

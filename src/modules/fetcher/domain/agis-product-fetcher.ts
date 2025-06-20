@@ -1,6 +1,4 @@
-import { AxiosError } from 'axios'
 import { randomUUID } from 'crypto'
-import { UnprocessableEntity } from '../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
 import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
@@ -33,50 +31,32 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         this.request = new AgisRequest(fetcher.config.token)
     }
 
-    protected async fetchDataBy(targets: ImporterConnection[]): Promise<Resource[]> {
-        const { token } = this.fetcher.config
+    protected async fetchDataBy(
+        targets: ImporterConnection[],
+        page: number = 1
+    ): Promise<{ resources: Resource[]; hasNextPage: boolean }> {
+        const perPage = 50
 
-        if (isEmpty(token)) return
-
-        const pagination: GetParams = (page: number, size: number) => ({
+        const { items, total_count } = await this.request.getProducts({
             'searchCriteria[currentPage]': page,
-            'searchCriteria[pageSize]': size
+            'searchCriteria[pageSize]': perPage
         })
 
-        let total: number
+        const pages = Math.ceil(total_count / perPage)
 
-        try {
-            // const res = await this.request.getProducts(pagination(1, 1))
-            total = 50
-        } catch (e) {
-            this.log(e)
-
-            if (e instanceof AxiosError && e.response?.status === 401) {
-                throw new UnprocessableEntity('agis', { token: 'unauthorized' })
-            } else throw e
+        const byMinPrice = (item: AgisProduct) => {
+            const price = this.getPriceOf(item)
+            return price >= this.fetcher.config.min_price
         }
+        const filtered = items.filter(byMinPrice)
 
-        const perPage = 50
-        const pages = Math.ceil(total / perPage)
+        const toResource = (target: ImporterConnection) => this.toResource(target, filtered)
+        const formatted = await Promise.all(targets.map(toResource))
 
-        const resources: Resource[] = []
-
-        for (let i = 1; i <= pages; i++) {
-            const { items } = await this.request.getProducts(pagination(i, perPage))
-
-            const byMinPrice = (item: AgisProduct) => {
-                const price = this.getPriceOf(item)
-                return price >= this.fetcher.config.min_price
-            }
-            const allowed = items.filter(byMinPrice)
-
-            const toResource = async (target: ImporterConnection) => await this.toResource(target, allowed)
-            const fetched = await Promise.all(targets.map(toResource))
-
-            resources.push(...fetched.flat())
+        return {
+            resources: formatted.flat(),
+            hasNextPage: page < pages
         }
-
-        return resources
     }
 
     private async toResource(target: ImporterConnection, items: AgisProduct[]): Promise<ProductResource[]> {
