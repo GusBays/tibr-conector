@@ -8,7 +8,7 @@ export interface Repository<F = any, T = any> {
 }
 
 export interface Meta<T = any> {
-    data: T[],
+    data: T[]
     meta: {
         current_page: number
         from: number
@@ -33,4 +33,11 @@ export interface Filter {
     page?: number
     limit?: number
     sort?: string
+}
+
+export interface Dimensions {
+    width: number
+    height: number
+    depth: number
+    weight: number
 }

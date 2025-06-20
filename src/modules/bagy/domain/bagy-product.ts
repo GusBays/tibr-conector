@@ -1,5 +1,4 @@
-import { Model, Timestamps } from '../../../common/contracts/contracts'
-import { Dimensions } from '../../resource/domain/product/product-resource'
+import { Dimensions, Model, Timestamps } from '../../../common/contracts/contracts'
 import { BagyPrice } from './bagy-price'
 import { BagyVariation } from './bagy-variation'
 import { CategoryDefaultBelongs } from './category'

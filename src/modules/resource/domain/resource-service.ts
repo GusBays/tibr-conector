@@ -13,8 +13,7 @@ import { ImporterFactory } from '../../importer/domain/importer-factory'
 import { Connection, ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
-import { ProductImage, ProductResource } from './product/product-resource'
-import { Resource, ResourceFilter, ResourceType, ResourceTypeEnum } from './resource'
+import { ProductImage, ProductResourceConfig, Resource, ResourceFilter, ResourceType, ResourceTypeEnum } from './resource'
 import { isProductResource } from './resource-helper'
 import { ResourceRepository } from './resource-repository'
 
@@ -152,7 +151,7 @@ export class ResourceService {
             type: ResourceType.PRODUCT,
             target: ConnectionApi.BAGY,
             target_id: payload.data.product_id
-        })) as ProductResource
+        })) as Resource<ProductResourceConfig>
 
         const newBalance = payload.data.balance
 
@@ -170,6 +169,10 @@ export class ResourceService {
 
         const target_payload = await request.updateProduct(product)
         await this.update({ ...resource, target_payload })
+    }
+
+    async getAll(filter: ResourceFilter): Promise<Resource[]> {
+        return await this.repository.getAll(filter)
     }
 
     /**

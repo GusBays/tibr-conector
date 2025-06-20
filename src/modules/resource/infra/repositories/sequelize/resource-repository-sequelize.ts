@@ -12,7 +12,9 @@ import { Resource } from './models/resource'
 @injectable()
 export class ResourceRepositorySequelize implements ResourceRepository {
     async insert(data: IResource[]): Promise<IResource[]> {
-        const res = await Resource.bulkCreate(data)
+        const res = await Resource.bulkCreate(data, {
+            updateOnDuplicate: ['source_payload', 'config', 'target_id', 'target_payload']
+        })
         return res.map(r => r.toJSON())
     }
 
@@ -41,6 +43,11 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         return await this.getOne(filter)
     }
 
+    async getAll(filter: ResourceFilter): Promise<IResource[]> {
+        const resources = await Resource.findAll(this.interpret(filter))
+        return resources.map(r => r.toJSON())
+    }
+
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
         const where: WhereOptions<IResource> = {}
 
@@ -48,7 +55,7 @@ export class ResourceRepositorySequelize implements ResourceRepository {
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
-        if (isNotEmpty(source_id)) where.source_id = source_id
+        if (isNotEmpty(source_id)) where.source_id = Array.isArray(source_id) ? { [Op.in]: source_id } : source_id
         if (isNotEmpty(target)) where.target = target
         if (isNotEmpty(target_id)) where.target_id = target_id
         if (isNotEmpty(type)) where.type = type

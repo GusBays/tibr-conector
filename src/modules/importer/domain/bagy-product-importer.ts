@@ -3,7 +3,7 @@ import { BagyProduct, BagyProductImage } from '../../bagy/domain/bagy-product'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
 import { isAgisFetcher } from '../../fetcher/domain/fetcher-helper'
-import { ProductImage, ProductResource } from '../../resource/domain/product/product-resource'
+import { ProductImage, ProductResourceConfig, Resource } from '../../resource/domain/resource'
 import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
 import { Connection, ConnectionApi, FetcherConnection } from '../../setting/domain/connection/connection'
 import { isFetcher } from '../../setting/domain/connection/connection-helper'
@@ -20,7 +20,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
         this.request = new BagyRequest(importer.config.token)
     }
 
-    async importOne(resource: ProductResource): Promise<ProductResource> {
+    async importOne(resource: Resource<ProductResourceConfig>): Promise<Resource<ProductResourceConfig>> {
         const product = this.toBagyProduct(resource)
 
         if (isNotEmpty(product.id)) {
@@ -44,7 +44,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
         }
     }
 
-    private toBagyProduct(resource: ProductResource): BagyProduct {
+    private toBagyProduct(resource: Resource<ProductResourceConfig>): BagyProduct {
         const byApi = (connection: Connection) => connection.api === resource.source && isFetcher(connection)
         const fetcher = this.setting.connections.find(byApi) as FetcherConnection
 
@@ -137,7 +137,7 @@ export class BagyProductImporter extends Importer<BagyImporter> {
         return product
     }
 
-    private afterCreate(resource: ProductResource): void {
+    private afterCreate(resource: Resource<ProductResourceConfig>): void {
         if (isEmpty(resource.target_payload)) return
 
         const { images } = resource.target_payload as BagyProduct

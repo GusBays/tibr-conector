@@ -1,8 +1,7 @@
 import { AfterCreate, AfterFind, AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
 import { isEmpty } from '../../../../../../common/helpers/helper'
 import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
-import { ProductImage } from '../../../../domain/product/product-resource'
-import { Resource as IResource, ResourceType } from '../../../../domain/resource'
+import { Resource as IResource, ProductImage, ResourceType } from '../../../../domain/resource'
 
 @Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
 export class Resource extends Model<IResource> {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
+import { Dimensions } from '../../../common/contracts/contracts'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
 import { toFloat } from '../../agis/domain/agis-helper'
-import { AgisPaginationParams } from '../../agis/domain/agis-pagination'
 import {
     AgisProduct,
     AgisProductCustomAttribute,
@@ -10,21 +10,14 @@ import {
     AgisProductStock
 } from '../../agis/domain/agis-product'
 import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
-import {
-    Dimensions,
-    ProductImage,
-    ProductResource,
-    ProductResourceConfig
-} from '../../resource/domain/product/product-resource'
-import { Resource, ResourceType } from '../../resource/domain/resource'
+import { ProductImage, ProductResourceConfig, Resource, ResourceType } from '../../resource/domain/resource'
 import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
 import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
 import { Setting } from '../../setting/domain/setting'
 import { Fetcher } from './fetcher'
 
-type GetParams = (page: number, size: number) => AgisPaginationParams
 export class AgisProductFetcher extends Fetcher<AgisFetcher> {
-    private request: AgisRequest
+    private readonly request: AgisRequest
 
     constructor(setting: Setting, fetcher: AgisFetcher) {
         super(setting, fetcher)
@@ -50,37 +43,41 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
         }
         const filtered = items.filter(byMinPrice)
 
-        const toResource = (target: ImporterConnection) => this.toResource(target, filtered)
-        const formatted = await Promise.all(targets.map(toResource))
+        const toResource = async (target: ImporterConnection) => {
+            const rows = await this.resourceService.getAll({
+                source: this.fetcher.api,
+                source_id: filtered.map(({ id }) => id),
+                target: target.api,
+                type: ResourceType.PRODUCT
+            })
+
+            const toFormat = (item: AgisProduct) => {
+                const resource = rows.find(({ source_id }) => source_id === item.id)
+                return {
+                    id: resource?.id,
+                    source: ConnectionApi.AGIS,
+                    source_id: item.id,
+                    source_payload: item,
+                    type: ResourceType.PRODUCT,
+                    target: target.api,
+                    target_id: resource?.target_id,
+                    target_payload: resource?.target_payload,
+                    config: this.getConfigBy(item, resource),
+                    created_at: undefined,
+                    updated_at: undefined
+                }
+            }
+            return items.map(toFormat)
+        }
+        const resources = await Promise.all(targets.map(toResource))
 
         return {
-            resources: formatted.flat(),
+            resources: resources.flat(),
             hasNextPage: page < pages
         }
     }
 
-    private async toResource(target: ImporterConnection, items: AgisProduct[]): Promise<ProductResource[]> {
-        const toFormat = async (item: AgisProduct): Promise<ProductResource> => {
-            const resource = await this.getResourceBy<ProductResource>(item.id, target.api, ResourceType.PRODUCT)
-
-            return {
-                id: resource?.id,
-                source: ConnectionApi.AGIS,
-                source_id: item.id,
-                source_payload: item,
-                type: ResourceType.PRODUCT,
-                target: target.api,
-                target_id: resource?.target_id,
-                target_payload: resource?.target_payload,
-                config: await this.getConfigBy(item, resource),
-                created_at: undefined,
-                updated_at: undefined
-            }
-        }
-        return await Promise.all(items.map(toFormat))
-    }
-
-    private async getConfigBy(item: AgisProduct, resource: ProductResource): Promise<ProductResourceConfig> {
+    private getConfigBy(item: AgisProduct, resource: Resource<ProductResourceConfig>): ProductResourceConfig {
         const getFromConfig = <T = any>(key: keyof ProductResourceConfig, defaultValue: T = null) => {
             if (isEmpty(resource?.config)) return defaultValue
 
