@@ -1,32 +1,40 @@
 import * as fs from 'fs'
 import Handlebars from 'handlebars'
-import * as Nodemailer from 'nodemailer'
-import { Transporter } from 'nodemailer'
-import hbs, { NodemailerExpressHandlebarsOptions } from 'nodemailer-express-handlebars'
 import { resolve } from 'path'
 
 export interface NotificationData {
     to: string
-    cc?: string
+    cc?: string[]
     subject: string
     templatePath: string
     context: Record<string, any>
 }
 
 export class Notification {
-    static transporter: Transporter
-
     static async send(data: NotificationData): Promise<void> {
-        const toRegister = ({ name, helper }) => Handlebars.registerHelper(name, helper)
-        this.getHelpers(data).forEach(toRegister)
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`
+        }
 
-        if (!this.transporter) this.getTransporter()
+        const body = JSON.stringify({
+            from: process.env.MAIL_FROM,
+            to: [data.to],
+            subject: data.subject,
+            html: this.render(data)
+        })
 
-        this.transporter.use('compile', hbs(this.getTemplateOptions(data)))
+        const res = await fetch(`${process.env.RESEND_API_BASE_URL}/emails`, {
+            method: 'POST',
+            headers,
+            body
+        })
 
-        try {
-            await this.transporter.sendMail(this.getOptionsFrom(data))
-        } catch (e) {}
+        const json = await res.json()
+
+        if (!res.ok) {
+            console.error('Notification.send:error', JSON.stringify({ data, response: { json, status: res.status } }))
+        }
     }
 
     static render(data: NotificationData): string {
@@ -49,45 +57,6 @@ export class Notification {
 
         const template = Handlebars.compile(templateSource)
         return template(data.context)
-    }
-
-    private static getTemplateOptions(data: NotificationData): NodemailerExpressHandlebarsOptions {
-        return {
-            viewEngine: {
-                extname: '.hbs',
-                partialsDir: resolve('src', 'common', 'notification', 'infra', 'handlebars', 'partials'),
-                layoutsDir: resolve('src', 'common', 'notification', 'infra', 'handlebars'),
-                defaultLayout: ''
-            },
-            viewPath: resolve('src', 'common', 'notification', 'infra', 'handlebars'),
-            extName: '.hbs'
-        }
-    }
-
-    private static getOptionsFrom(data: NotificationData): Record<string, any> {
-        return {
-            from: {
-                name: 'TI BR Connector',
-                address: process.env.MAIL_FROM
-            },
-            to: data.to,
-            cc: data.cc,
-            subject: data.subject,
-            template: data.templatePath,
-            context: data.context
-        }
-    }
-
-    private static getTransporter(): void {
-        this.transporter = Nodemailer.createTransport({
-            host: process.env.MAIL_HOST,
-            port: Number(process.env.MAIL_PORT),
-            secure: false,
-            auth: {
-                user: process.env.MAIL_USER,
-                pass: process.env.MAIL_PASSWORD
-            }
-        })
     }
 
     private static getHelpers(data: NotificationData): Array<{ name: string; helper: (...args: any) => any }> {
