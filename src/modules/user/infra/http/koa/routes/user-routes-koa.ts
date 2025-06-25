@@ -9,9 +9,10 @@ import { UserService } from '../../../../domain/user-service'
 const path = '/users'
 
 export async function userRoutesKoa(router: Router): Promise<void> {
-    const { store, index, show, update, destroy, login } = userHandler()
+    const { store, index, show, update, destroy, me, login } = userHandler()
 
     router.post(path, store)
+    router.get(`${path}/:token/me`, me)
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
@@ -33,11 +34,7 @@ function userHandler() {
     }
 
     const show = async (ctx: Context): Promise<void> => {
-        const { id } = KoaHelper.extractParams<UserFilter>(ctx)
-
-        const filter = isNaN(+id) ? { token: id } : { id: Number(id) }
-
-        const user = await service.getOne(filter)
+        const user = await service.getOne(KoaHelper.extractParams<UserFilter>(ctx))
         KoaResponse.success(ctx, user)
     }
 
@@ -51,10 +48,15 @@ function userHandler() {
         KoaResponse.noContent(ctx)
     }
 
+    const me = async (ctx: Context): Promise<void> => {
+        const user = await service.getOne(KoaHelper.extractParams<{ token: string }>(ctx))
+        KoaResponse.success(ctx, user)
+    }
+
     const login = async (ctx: Context): Promise<void> => {
         const user = await service.login(KoaHelper.extractBody<{ email: string; password: string }>(ctx))
         KoaResponse.success(ctx, user)
     }
 
-    return { store, index, show, update, destroy, login }
+    return { store, index, show, update, destroy, me, login }
 }

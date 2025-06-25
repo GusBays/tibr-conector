@@ -15,6 +15,7 @@ export interface UserFilter extends Partial<Model>, Filter {
     type?: UserType
     types?: UserType[]
     active?: boolean
+    token?: string
 }
 
 export enum UserType {
