@@ -20,12 +20,12 @@ export class FileSystem {
 
         if (this.exists(fullPath)) await this.delete(fullPath)
 
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(fullPath)
 
             file.pipe(stream)
 
-            stream.on('finish', () => resolve)
+            stream.on('finish', () => resolve())
             stream.on('error', reject)
         })
 
