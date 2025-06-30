@@ -3,7 +3,7 @@ import { ConnectionApi } from '../../setting/domain/connection/connection'
 
 export interface History extends Model, Timestamps {
     type: HistoryType
-    connection: ConnectionApi
+    api: ConnectionApi
     started_at: string
     ended_at: string
     extra: HistoryExtra
@@ -18,14 +18,6 @@ export interface HistoryExtra {
 export enum HistoryType {
     FETCH = 'fetch',
     IMPORT = 'import'
-}
-
-export interface FetchHistory extends History {
-    type: HistoryType.FETCH
-}
-
-export interface ImportHistory extends History {
-    type: HistoryType.IMPORT
 }
 
 export interface HistoryFilter extends Partial<Model>, Filter {}

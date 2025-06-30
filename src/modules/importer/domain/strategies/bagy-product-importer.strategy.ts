@@ -5,14 +5,12 @@ import { BagyRequest } from '../../../bagy/infra/http/axios/bagy-request'
 import { isAgisFetcher } from '../../../fetcher/domain/fetcher-helper'
 import { ProductImage, ProductResourceConfig, ProductUpdate, Resource } from '../../../resource/domain/resource'
 import { BagyImporter } from '../../../setting/domain/connection/bagy/bagy-connection'
-import { Connection, ConnectionApi, FetcherConnection } from '../../../setting/domain/connection/connection'
+import { Connection, FetcherConnection } from '../../../setting/domain/connection/connection'
 import { isFetcher } from '../../../setting/domain/connection/connection-helper'
 import { PricingSettingGroup, Setting } from '../../../setting/domain/setting'
 import { ImporterStrategy } from './importer.strategy'
 
 export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> {
-    readonly api: ConnectionApi.BAGY
-
     private request: BagyRequest
 
     constructor(setting: Setting, importer: BagyImporter) {

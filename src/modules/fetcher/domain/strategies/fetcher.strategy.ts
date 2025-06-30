@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { UnprocessableEntity } from '../../../../common/exceptions/unprocessable-entity'
 import { isEmpty, isNotEmpty, not, throwIf } from '../../../../common/helpers/helper'
 import { Notification } from '../../../../common/notification/domain/notification'
-import { FetchHistory, History, HistoryExtra, HistoryType } from '../../../history/domain/history'
+import { History, HistoryExtra, HistoryType } from '../../../history/domain/history'
 import { HistoryService } from '../../../history/domain/history-service'
 import { ImporterStrategy } from '../../../importer/domain/strategies/importer.strategy'
 import { Log } from '../../../log/domain/log'
@@ -107,16 +107,14 @@ export abstract class FetcherStrategy<F extends FetcherConnection = any> {
     }
 
     private async createHistory(started_at: string, extra: HistoryExtra): Promise<History> {
-        const history: FetchHistory = {
-            id: null,
-            connection: this.fetcher.api,
+        const history: History = {
+            api: this.fetcher.api,
             type: HistoryType.FETCH,
             started_at,
             ended_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            extra,
-            created_at: null,
-            updated_at: null
-        }
+            extra
+        } as History
+
         return await HistoryService.getInstance().create(history)
     }
 }

@@ -3,27 +3,20 @@ import { format } from 'date-fns'
 import { UnprocessableEntity } from '../../../../common/exceptions/unprocessable-entity'
 import { isEmpty, not, throwIf } from '../../../../common/helpers/helper'
 import { Notification } from '../../../../common/notification/domain/notification'
-import { FetchHistory, History, HistoryExtra, HistoryType } from '../../../history/domain/history'
+import { History, HistoryExtra, HistoryType } from '../../../history/domain/history'
 import { HistoryService } from '../../../history/domain/history-service'
 import { Log } from '../../../log/domain/log'
 import { LogService } from '../../../log/domain/log-service'
 import { ProductUpdate, Resource } from '../../../resource/domain/resource'
 import { isProductResource } from '../../../resource/domain/resource-helper'
 import { ResourceService } from '../../../resource/domain/resource-service'
-import {
-    Connection,
-    ConnectionApi,
-    ConnectionStatus,
-    ImporterConnection
-} from '../../../setting/domain/connection/connection'
+import { Connection, ConnectionStatus, ImporterConnection } from '../../../setting/domain/connection/connection'
 import { ConnectionService } from '../../../setting/domain/connection/connection-service'
 import { Setting } from '../../../setting/domain/setting'
 import { UserType } from '../../../user/domain/user'
 import { UserService } from '../../../user/domain/user-service'
 
 export abstract class ImporterStrategy<I extends ImporterConnection = any> {
-    abstract readonly api: ConnectionApi
-
     private readonly connectionService = ConnectionService.getInstance()
     private readonly logService = LogService.getInstance()
     private readonly resourceService = ResourceService.getInstance()
@@ -104,16 +97,14 @@ export abstract class ImporterStrategy<I extends ImporterConnection = any> {
     }
 
     private async createHistory(started_at: string, extra: HistoryExtra): Promise<History> {
-        const history: FetchHistory = {
-            id: null,
-            connection: this.importer.api,
-            type: HistoryType.FETCH,
+        const history: History = {
+            api: this.importer.api,
+            type: HistoryType.IMPORT,
             started_at,
             ended_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            extra,
-            created_at: null,
-            updated_at: null
-        }
+            extra
+        } as History
+
         return await HistoryService.getInstance().create(history)
     }
 }
