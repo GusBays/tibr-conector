@@ -43,8 +43,8 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
         const pages = Math.ceil(total_count / perPage)
 
         const byConfig = (item: AgisProduct) => {
-            const { price, stock } = this.getStockAndPriceOf(item)
-            return price >= this.fetcher.config.min_price && this.fetcher.config.min_stock >= stock
+            const { price, balance } = this.getBalanceAndPriceOf(item)
+            return price >= this.fetcher.config.min_price && this.fetcher.config.min_stock >= balance
         }
         const filtered = items.filter(byConfig)
 
@@ -99,9 +99,8 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
         }
 
         const getPriceAndBalance = (): { price: number; balance: number } => {
-            const { stock, price } = this.getStockAndPriceOf(item)
-
-            return { price: getFromConfig('price', price), balance: getFromConfig('balance', stock) }
+            const { balance, price } = this.getBalanceAndPriceOf(item)
+            return { price: getFromConfig('price', price), balance }
         }
 
         const getDimensions = (): Dimensions => {
@@ -164,7 +163,7 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
         }
     }
 
-    private getStockAndPriceOf(item: AgisProduct): { price: number; stock: number } {
+    private getBalanceAndPriceOf(item: AgisProduct): { price: number; balance: number } {
         let price = 0
         let balance = 0
 
@@ -175,7 +174,7 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
 
         return {
             price: +price.toFixed(2),
-            stock: balance
+            balance
         }
     }
 }
