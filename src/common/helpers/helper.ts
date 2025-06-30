@@ -1,8 +1,12 @@
 export type ErrorConstructor = new (...args: any[]) => Error
 
-export function throwIf(condition: boolean, Ex: ErrorConstructor, ...args: any[]): void {
+export function throwIf<T extends new (...args: any[]) => Error>(
+    condition: boolean,
+    Ex: T,
+    ...args: ConstructorParameters<T>
+): void {
     if (!condition) return
-    else throw new Ex(args)
+    else throw new Ex(...args)
 }
 
 export function isNull(value: any) {

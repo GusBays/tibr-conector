@@ -12,6 +12,7 @@ import { DbTypeEnum } from '../../domain/db'
 export async function sequelizeBootstrap(): Promise<void> {
     const mysql: SequelizeOptions = {
         dialect: 'mysql',
+        logging: 'development' === process.env.NODE_ENV,
         host: process.env.DB_HOST,
         port: Number(process.env.DB_PORT),
         username: process.env.DB_USER,

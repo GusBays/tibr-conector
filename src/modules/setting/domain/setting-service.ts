@@ -45,7 +45,7 @@ export class SettingService {
 
     async getOne(filter: SettingFilter): Promise<Setting> {
         const setting = await this.repository.getOne(filter)
-        throwIf(isEmpty(setting), NotFound, ['setting'])
+        throwIf(isEmpty(setting), NotFound, 'setting')
         return setting
     }
 

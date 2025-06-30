@@ -1,22 +1,27 @@
 import { randomUUID } from 'crypto'
-import { Dimensions } from '../../../common/contracts/contracts'
-import { isEmpty, isNotEmpty, isUndefined } from '../../../common/helpers/helper'
-import { toFloat } from '../../agis/domain/agis-helper'
+import { Dimensions } from '../../../../common/contracts/contracts'
+import { isEmpty, isNotEmpty, isUndefined } from '../../../../common/helpers/helper'
+import { toFloat } from '../../../agis/domain/agis-helper'
 import {
     AgisProduct,
     AgisProductCustomAttribute,
     AgisProductCustomAttributeCode,
-    AgisProductMediaGallery,
-    AgisProductStock
-} from '../../agis/domain/agis-product'
-import { AgisRequest } from '../../agis/infra/http/axios/agis-request'
-import { ProductImage, ProductResourceConfig, Resource, ResourceType } from '../../resource/domain/resource'
-import { AgisFetcher } from '../../setting/domain/connection/agis/agis-connection'
-import { ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
-import { Setting } from '../../setting/domain/setting'
-import { Fetcher } from './fetcher'
+    AgisProductMediaGallery
+} from '../../../agis/domain/agis-product'
+import { AgisRequest } from '../../../agis/infra/http/axios/agis-request'
+import {
+    ProductImage,
+    ProductResourceConfig,
+    ProductUpdate,
+    Resource,
+    ResourceType
+} from '../../../resource/domain/resource'
+import { AgisFetcher } from '../../../setting/domain/connection/agis/agis-connection'
+import { ConnectionApi, ImporterConnection } from '../../../setting/domain/connection/connection'
+import { Setting } from '../../../setting/domain/setting'
+import { FetcherStrategy } from './fetcher.strategy'
 
-export class AgisProductFetcher extends Fetcher<AgisFetcher> {
+export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
     private readonly request: AgisRequest
 
     constructor(setting: Setting, fetcher: AgisFetcher) {
@@ -37,11 +42,11 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
 
         const pages = Math.ceil(total_count / perPage)
 
-        const byMinPrice = (item: AgisProduct) => {
-            const price = this.getPriceOf(item)
-            return price >= this.fetcher.config.min_price
+        const byConfig = (item: AgisProduct) => {
+            const { price, stock } = this.getStockAndPriceOf(item)
+            return price >= this.fetcher.config.min_price && this.fetcher.config.min_stock >= stock
         }
-        const filtered = items.filter(byMinPrice)
+        const filtered = items.filter(byConfig)
 
         const toResource = async (target: ImporterConnection) => {
             const rows = await this.resourceService.getAll({
@@ -67,9 +72,9 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
                     updated_at: undefined
                 }
             }
-            return items.map(toFormat)
+            return filtered.map(toFormat)
         }
-        const resources = await Promise.all(targets.map(toResource))
+        const resources = isNotEmpty(filtered) ? await Promise.all(targets.map(toResource)) : []
 
         return {
             resources: resources.flat(),
@@ -93,12 +98,10 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
             return isNotEmpty(customAttribute) && isNotEmpty(customAttribute.value) ? customAttribute.value : null
         }
 
-        const getPrice = (): { price: number } => {
-            const price = getFromConfig('price')
+        const getPriceAndBalance = (): { price: number; balance: number } => {
+            const { stock, price } = this.getStockAndPriceOf(item)
 
-            if (isNotEmpty(price)) return { price }
-
-            return { price: this.getPriceOf(item) }
+            return { price: getFromConfig('price', price), balance: getFromConfig('balance', stock) }
         }
 
         const getDimensions = (): Dimensions => {
@@ -115,13 +118,6 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
                 depth: toFloat(depth),
                 weight: toFloat(weight ?? this.fetcher.config.weight_default)
             }
-        }
-
-        const getBalance = (): { balance: number } => {
-            const toSumBalance = (current: number, stock: AgisProductStock) => stock.qty + current
-            const balance = getFromConfig('balance', item.stock.reduce(toSumBalance, 0))
-
-            return { balance }
         }
 
         const getImages = (): { images: ProductImage[] } => {
@@ -157,21 +153,29 @@ export class AgisProductFetcher extends Fetcher<AgisFetcher> {
                 getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION)
             ),
             markup: getFromConfig('markup', undefined),
-            ...getPrice(),
+            ...getPriceAndBalance(),
             ...getDimensions(),
-            ...getBalance(),
             ...getImages(),
             reference: getFromConfig('reference', item.sku),
             gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN)),
             ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
-            partial_update: getFromConfig('partial_update', false),
-            allowed_to_import: getFromConfig('allowed_to_import', false)
+            update: getFromConfig('update', ProductUpdate.DISABLED)
         }
     }
 
-    private getPriceOf(item: AgisProduct): number {
-        const toSumPrice = (current: number, stock: AgisProductStock) => stock.price + current
-        return +item.stock.reduce(toSumPrice, 0).toFixed(2)
+    private getStockAndPriceOf(item: AgisProduct): { price: number; stock: number } {
+        let price = 0
+        let balance = 0
+
+        item.stock.forEach(stock => {
+            price += stock.price
+            balance += stock.qty
+        })
+
+        return {
+            price: +price.toFixed(2),
+            stock: balance
+        }
     }
 }

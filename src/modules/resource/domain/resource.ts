@@ -2,7 +2,7 @@ import { UUID } from 'crypto'
 import { Dimensions, Filter, Model, Timestamps } from '../../../common/contracts/contracts'
 import { ConnectionApi } from '../../setting/domain/connection/connection'
 
-export interface Resource<T extends Record<string, any> = any> extends Model, Timestamps {
+export interface Resource<T = any> extends Model, Timestamps {
     type: ResourceType
     source: ConnectionApi
     source_id: number
@@ -38,8 +38,7 @@ export interface ProductResourceConfig extends Dimensions {
     gtin: number
     ncm: string
     active: boolean
-    partial_update: boolean
-    allowed_to_import: boolean
+    update: ProductUpdate
     images: ProductImage[]
     feature_ids?: number[]
 }
@@ -54,6 +53,12 @@ export interface ProductImage {
 
 export enum ResourceType {
     PRODUCT = 'product'
+}
+
+export enum ProductUpdate {
+    PARTIAL = 'partial',
+    FULL = 'full',
+    DISABLED = 'disabled'
 }
 
 export enum ResourceTypeEnum {

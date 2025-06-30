@@ -9,7 +9,7 @@ import { isBagyVariationStockWebhook } from '../../bagy/domain/bagy-helper'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyWebhookPayload } from '../../bagy/domain/bagy-webhook'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
-import { ImporterFactory } from '../../importer/domain/importer-factory'
+import { ImporterStrategyFactory } from '../../importer/domain/strategies/importer.strategy.factory'
 import { Connection, ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
 import { isImporter } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
@@ -25,11 +25,6 @@ export class ResourceService {
         return container.resolve(ResourceTypeEnum.SERVICE)
     }
 
-    async insert(data: Resource[]): Promise<Resource[]> {
-        await Promise.all(data.map(r => this.createImagesIfNeeded(r)))
-        return await this.repository.insert(data)
-    }
-
     async create(data: Resource): Promise<Resource> {
         await this.createImagesIfNeeded(data)
         return await this.repository.create(data)
@@ -41,7 +36,7 @@ export class ResourceService {
 
     async getOne(filter: ResourceFilter): Promise<Resource> {
         const resource = await this.repository.getOne(filter)
-        throwIf(isEmpty(resource), NotFound, ['resource'])
+        throwIf(isEmpty(resource), NotFound, 'resource')
         return resource
     }
 
@@ -65,9 +60,9 @@ export class ResourceService {
             connection.active && connection.api === resource.target && isImporter(connection)
         const importer = setting.connections.find(byApi) as ImporterConnection
 
-        throwIf(isEmpty(importer), NotFound, ['importer'])
+        throwIf(isEmpty(importer), NotFound, 'importer')
 
-        await ImporterFactory.getInstance(resource.type, setting, importer).importOne(resource)
+        await ImporterStrategyFactory.getInstance(resource.type, setting, importer).importOne(resource)
 
         return await this.update(resource)
     }
@@ -115,7 +110,7 @@ export class ResourceService {
         const byId = (image: ProductImage) => image.id === filter.image_id
         const image = images.find(byId)
 
-        throwIf(isEmpty(image), NotFound, ['image'])
+        throwIf(isEmpty(image), NotFound, 'image')
 
         images.splice(images.indexOf(image), 1)
 
@@ -128,7 +123,7 @@ export class ResourceService {
             const byTarget = (connection: Connection) => connection.api === resource.target
             const importer = setting.connections.find(byTarget)
 
-            await ImporterFactory.getInstance(resource.type, setting, importer as ImporterConnection).deleteImage(
+            await ImporterStrategyFactory.getInstance(resource.type, setting, importer as ImporterConnection).deleteImage(
                 resource.target_id,
                 image.target_id
             )

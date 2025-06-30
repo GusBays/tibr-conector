@@ -11,13 +11,6 @@ import { Resource } from './models/resource'
 
 @injectable()
 export class ResourceRepositorySequelize implements ResourceRepository {
-    async insert(data: IResource[]): Promise<IResource[]> {
-        const res = await Resource.bulkCreate(data, {
-            updateOnDuplicate: ['source_payload', 'config', 'target_id', 'target_payload']
-        })
-        return res.map(r => r.toJSON())
-    }
-
     async create(data: IResource): Promise<IResource> {
         const resource = await Resource.create(data)
         return resource.toJSON()

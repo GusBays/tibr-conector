@@ -10,19 +10,22 @@ import 'reflect-metadata'
 import { sequelizeBootstrap } from './common/db/infra/bootstraps/sequelize-bootstrap'
 import { errorHandler } from './common/http/domain/koa/middlewares/error-handler-koa'
 import { notificationRoutesKoa } from './common/notification/infra/http/koa/notification-routes-koa'
-import { FetcherFactory } from './modules/fetcher/domain/fetcher-factory'
-import { fetcherBootstrap } from './modules/fetcher/infra/bootstraps/fetcher-bootstrap'
+import { FetcherStrategyFactory } from './modules/fetcher/domain/strategies/fetcher.strategy.factory'
+import { fetcherBootstrap } from './modules/fetcher/infra/bootstraps/fetcher.bootstrap'
 import { fetcherRoutesKoa } from './modules/fetcher/infra/http/koa/routes/fetcher-routes-koa'
 import { historyBootstrap } from './modules/history/infra/bootstraps/history-bootstrap'
 import { historyRoutesKoa } from './modules/history/infra/http/koa/routes/history-routes-koa'
+import { ImporterStrategyFactory } from './modules/importer/domain/strategies/importer.strategy.factory'
+import { importerBootstrap } from './modules/importer/infra/bootstraps/importer.bootstrap'
+import { importerRoutesKoa } from './modules/importer/infra/http/koa/routes/importer.routes.koa'
 import { LogService } from './modules/log/domain/log-service'
 import { logBootstrap } from './modules/log/infra/bootstraps/log-bootstrap'
 import { logRoutesKoa } from './modules/log/infra/http/koa/routes/log-routes-koa'
 import { ResourceType } from './modules/resource/domain/resource'
 import { resourceBootstrap } from './modules/resource/infra/bootstraps/resource-bootstrap'
 import { resourceRoutesKoa } from './modules/resource/infra/http/koa/routes/resource-routes-koa'
-import { Connection, FetcherConnection } from './modules/setting/domain/connection/connection'
-import { isFetcher } from './modules/setting/domain/connection/connection-helper'
+import { Connection, FetcherConnection, ImporterConnection } from './modules/setting/domain/connection/connection'
+import { isFetcher, isImporter } from './modules/setting/domain/connection/connection-helper'
 import { SettingService } from './modules/setting/domain/setting-service'
 import { connectionBootstrap } from './modules/setting/infra/bootstraps/connection-bootstrap'
 import { settingBootstrap } from './modules/setting/infra/bootstraps/setting-bootstrap'
@@ -40,6 +43,7 @@ async function run(): Promise<void> {
         connectionBootstrap(),
         fetcherBootstrap(),
         historyBootstrap(),
+        importerBootstrap(),
         logBootstrap(),
         resourceBootstrap(),
         settingBootstrap(),
@@ -53,6 +57,7 @@ async function run(): Promise<void> {
 
     const toRegister = async (route: Route) => await route(router)
     const routes = [
+        importerRoutesKoa,
         fetcherRoutesKoa,
         historyRoutesKoa,
         logRoutesKoa,
@@ -74,15 +79,25 @@ async function run(): Promise<void> {
         .use(router.allowedMethods())
         .listen(port, () => console.log(`Running on ${port}`))
 
-    const fetchAndImportProductsJob = async (): Promise<void> => {
+    const fetchProductsJob = async (): Promise<void> => {
         const setting = await SettingService.getInstance().getOne({})
 
         const byFetcher = (connection: Connection) => isFetcher(connection) && connection.active
-        const toFetch = async (fetcher: FetcherConnection) =>
-            await FetcherFactory.getInstance(ResourceType.PRODUCT, setting, fetcher).fetch()
+        const toFetch = (fetcher: FetcherConnection) =>
+            FetcherStrategyFactory.getInstance(ResourceType.PRODUCT, setting, fetcher).fetch()
         await Promise.all(setting.connections.filter(byFetcher).map(toFetch))
     }
-    schedule('0 0 * * *', fetchAndImportProductsJob)
+    schedule('0 0 * * *', fetchProductsJob)
+
+    const syncImportedProductsJob = async (): Promise<void> => {
+        const setting = await SettingService.getInstance().getOne({})
+
+        const byImporter = (connection: Connection) => isImporter(connection) && connection.active
+        const toImport = (importer: ImporterConnection) =>
+            ImporterStrategyFactory.getInstance(ResourceType.PRODUCT, setting, importer).import()
+        await Promise.all(setting.connections.filter(byImporter).map(toImport))
+    }
+    schedule('0 2 * * *', syncImportedProductsJob)
 
     const clearLogsJob = async (): Promise<void> => {
         const now = new Date()

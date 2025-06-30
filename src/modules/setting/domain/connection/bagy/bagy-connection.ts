@@ -1,9 +1,4 @@
-import { Connection, ConnectionApi, ImporterConnection } from '../connection'
-
-export interface BagyConnection extends Connection {
-    api: ConnectionApi.BAGY
-    config: BagyConfig
-}
+import { ConnectionApi, ImporterConnection } from '../connection'
 
 export interface BagyImporter extends ImporterConnection {
     api: ConnectionApi.BAGY

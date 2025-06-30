@@ -1,12 +1,11 @@
 import { container, injectable } from 'tsyringe'
 import { NotFound } from '../../../common/exceptions/not-found'
-import { isEmpty, not } from '../../../common/helpers/helper'
+import { isEmpty, throwIf } from '../../../common/helpers/helper'
 import { ResourceType } from '../../resource/domain/resource'
 import { Connection, FetcherConnection } from '../../setting/domain/connection/connection'
-import { isFetcher } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
-import { FetcherFactory } from './fetcher-factory'
-import { FetcherTypeEnum } from './fetcher-types'
+import { FetcherTypeEnum } from './fetcher'
+import { FetcherStrategyFactory } from './strategies/fetcher.strategy.factory'
 
 @injectable()
 export class FetcherService {
@@ -20,10 +19,8 @@ export class FetcherService {
         const byId = (connection: Connection) => +connection.id === +id
         const fetcher = setting.connections.find(byId) as FetcherConnection
 
-        if (isEmpty(fetcher) || not(fetcher.active) || false === isFetcher(fetcher)) {
-            throw new NotFound('fetcher')
-        }
+        throwIf(isEmpty(fetcher), NotFound, 'fetcher')
 
-        await FetcherFactory.getInstance(resource, setting, fetcher).fetch()
+        await FetcherStrategyFactory.getInstance(resource, setting, fetcher).fetch()
     }
 }

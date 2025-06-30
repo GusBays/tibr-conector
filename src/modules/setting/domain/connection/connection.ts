@@ -1,10 +1,12 @@
 import { Filter, Model, Timestamps } from '../../../../common/contracts/contracts'
+import { ResourceType } from '../../../resource/domain/resource'
 import { SettingBelongs } from '../setting'
 
-export interface Connection extends Model, SettingBelongs, Timestamps {
+export interface Connection<T = any> extends Model, SettingBelongs, Timestamps {
     type: ConnectionType
     api: ConnectionApi
-    config: Record<string, any>
+    config: T
+    status: ConnectionStatus
     active: boolean
 }
 
@@ -33,6 +35,13 @@ export interface ConnectionBelongs {
 export interface ConnectionFilter extends Partial<Model>, Partial<SettingBelongs>, Filter {
     type?: ConnectionType
     api?: ConnectionApi
+    resource?: ResourceType
+    status?: ConnectionStatus
+}
+
+export enum ConnectionStatus {
+    DONE = 'done',
+    IN_PROGRESS = 'in_progress'
 }
 
 export enum ConnectionTypeEnum {

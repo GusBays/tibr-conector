@@ -1,16 +1,16 @@
-import { isEmpty, isNotEmpty } from '../../../common/helpers/helper'
-import { BagyProduct, BagyProductImage } from '../../bagy/domain/bagy-product'
-import { BagyVariation } from '../../bagy/domain/bagy-variation'
-import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
-import { isAgisFetcher } from '../../fetcher/domain/fetcher-helper'
-import { ProductImage, ProductResourceConfig, Resource } from '../../resource/domain/resource'
-import { BagyImporter } from '../../setting/domain/connection/bagy/bagy-connection'
-import { Connection, ConnectionApi, FetcherConnection } from '../../setting/domain/connection/connection'
-import { isFetcher } from '../../setting/domain/connection/connection-helper'
-import { PricingSettingGroup, Setting } from '../../setting/domain/setting'
-import { Importer } from './importer'
+import { isEmpty, isNotEmpty } from '../../../../common/helpers/helper'
+import { BagyProduct, BagyProductImage } from '../../../bagy/domain/bagy-product'
+import { BagyVariation } from '../../../bagy/domain/bagy-variation'
+import { BagyRequest } from '../../../bagy/infra/http/axios/bagy-request'
+import { isAgisFetcher } from '../../../fetcher/domain/fetcher-helper'
+import { ProductImage, ProductResourceConfig, ProductUpdate, Resource } from '../../../resource/domain/resource'
+import { BagyImporter } from '../../../setting/domain/connection/bagy/bagy-connection'
+import { Connection, ConnectionApi, FetcherConnection } from '../../../setting/domain/connection/connection'
+import { isFetcher } from '../../../setting/domain/connection/connection-helper'
+import { PricingSettingGroup, Setting } from '../../../setting/domain/setting'
+import { ImporterStrategy } from './importer.strategy'
 
-export class BagyProductImporter extends Importer<BagyImporter> {
+export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> {
     readonly api: ConnectionApi.BAGY
 
     private request: BagyRequest
@@ -52,11 +52,9 @@ export class BagyProductImporter extends Importer<BagyImporter> {
             id: resource.target_id
         } as BagyProduct
 
-        if (resource.config.partial_update && isNotEmpty(resource.target_payload)) {
-            const toBalance = (variation: BagyVariation) =>
-                ({ id: variation.id, balance: resource.config.balance } as BagyVariation)
-            product.variations = (resource.target_payload as BagyProduct).variations.map(toBalance)
-        } else {
+        const shouldGetFull = isEmpty(resource.target_id) || resource.config.update === ProductUpdate.FULL
+
+        if (shouldGetFull) {
             product.category_default_id = resource.config.category_default_id ?? this.importer.config.category_default_id
             product.name = resource.config.name
             product.short_description = resource.config.short_description
@@ -132,6 +130,10 @@ export class BagyProductImporter extends Importer<BagyImporter> {
                 return variation
             }
             product.variations = this.setting.pricing.groups.map(toVariation)
+        } else {
+            const toBalance = (variation: BagyVariation) =>
+                ({ id: variation.id, balance: resource.config.balance } as BagyVariation)
+            product.variations = (resource.target_payload as BagyProduct).variations.map(toBalance)
         }
 
         return product
