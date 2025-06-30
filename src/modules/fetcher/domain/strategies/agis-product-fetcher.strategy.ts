@@ -44,7 +44,7 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
 
         const byConfig = (item: AgisProduct) => {
             const { price, balance } = this.getBalanceAndPriceOf(item)
-            return price >= this.fetcher.config.min_price && this.fetcher.config.min_stock >= balance
+            return price >= this.fetcher.config.min_price && balance >= this.fetcher.config.min_stock
         }
         const filtered = items.filter(byConfig)
 
