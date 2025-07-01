@@ -38,7 +38,11 @@ export abstract class ImporterStrategy<I extends ImporterConnection = any> {
         let shouldContinue = true
 
         do {
-            const { data: resources, meta } = await this.resourceService.getPaginate({ page, limit: 50 })
+            const { data: resources, meta } = await this.resourceService.getPaginate({
+                page,
+                limit: 50,
+                ignore_deleted: true
+            })
 
             if (isEmpty(resources)) break
 

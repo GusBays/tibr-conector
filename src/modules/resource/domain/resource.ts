@@ -24,6 +24,7 @@ export interface ResourceFilter extends Partial<Model>, Filter {
     target_id?: number
     type?: ResourceType
     with_stock_on_agis?: boolean
+    ignore_deleted?: boolean
 }
 
 export interface ProductResourceConfig extends Dimensions {

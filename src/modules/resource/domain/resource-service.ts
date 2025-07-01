@@ -53,6 +53,10 @@ export class ResourceService {
         return await this.repository.update(data)
     }
 
+    async delete(filter: ResourceFilter): Promise<void> {
+        await this.repository.delete(filter)
+    }
+
     async sync(filter: ResourceFilter): Promise<Resource> {
         const resource = await this.getOne(filter)
         const setting = await SettingService.getInstance().getOne({})

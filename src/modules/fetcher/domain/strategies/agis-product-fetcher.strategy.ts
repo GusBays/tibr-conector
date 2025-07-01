@@ -53,7 +53,8 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
                 source: this.fetcher.api,
                 source_id: filtered.map(({ id }) => id),
                 target: target.api,
-                type: ResourceType.PRODUCT
+                type: ResourceType.PRODUCT,
+                ignore_deleted: false
             })
 
             const toFormat = (item: AgisProduct) => {

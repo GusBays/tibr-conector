@@ -36,6 +36,10 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         return await this.getOne(filter)
     }
 
+    async delete(filter: ResourceFilter): Promise<void> {
+        await Resource.destroy(this.interpret(filter))
+    }
+
     async getAll(filter: ResourceFilter): Promise<IResource[]> {
         const resources = await Resource.findAll(this.interpret(filter))
         return resources.map(r => r.toJSON())
@@ -44,7 +48,7 @@ export class ResourceRepositorySequelize implements ResourceRepository {
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
         const where: WhereOptions<IResource> = {}
 
-        const { id, source, source_id, target, target_id, type, with_stock_on_agis, q } = filter
+        const { id, source, source_id, target, target_id, type, with_stock_on_agis, ignore_deleted, q } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
@@ -74,6 +78,6 @@ export class ResourceRepositorySequelize implements ResourceRepository {
             ]
         }
 
-        return { where }
+        return { where, paranoid: isNotEmpty(ignore_deleted) ? Boolean(+ignore_deleted) : true }
     }
 }

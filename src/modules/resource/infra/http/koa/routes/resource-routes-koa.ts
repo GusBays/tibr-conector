@@ -13,20 +13,14 @@ import { ResourceService } from '../../../../domain/resource-service'
 const path = '/resources'
 
 export async function resourceRoutesKoa(router: Router): Promise<void> {
-    const { index, show, update, sync, getImage, createImage, deleteImage, webhook } = resourceHandler()
+    const { index, show, update, destroy, sync, getImage, createImage, deleteImage, webhook } = resourceHandler()
 
     router.get(path, auth, index)
     router.get(`${path}/:id`, auth, show)
     router.put(`${path}/:id`, auth, update)
+    router.delete(`${path}/:id`, auth, destroy)
     router.post(`${path}/:id/sync`, auth, sync)
-    router.post(
-        `${path}/:id/images`,
-        auth,
-        koaBody({
-            multipart: true
-        }),
-        createImage
-    )
+    router.post(`${path}/:id/images`, auth, koaBody({ multipart: true }), createImage)
     router.delete(`${path}/:id/images/:image_id`, deleteImage)
     router.post(`${path}/:api/webhook`, webhook)
 
@@ -50,6 +44,11 @@ function resourceHandler() {
     const update = async (ctx: Context): Promise<void> => {
         const resource = await service.update(KoaHelper.extractBody<Resource>(ctx))
         KoaResponse.success(ctx, resource)
+    }
+
+    const destroy = async (ctx: Context): Promise<void> => {
+        await service.delete(KoaHelper.extractParams<ResourceFilter>(ctx))
+        KoaResponse.noContent(ctx)
     }
 
     const sync = async (ctx: Context): Promise<void> => {
@@ -87,5 +86,5 @@ function resourceHandler() {
         await service.webhook(api as ConnectionApi, body)
     }
 
-    return { index, show, update, sync, getImage, createImage, deleteImage, webhook }
+    return { index, show, update, destroy, sync, getImage, createImage, deleteImage, webhook }
 }

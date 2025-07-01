@@ -1,9 +1,9 @@
-import { AfterCreate, AfterFind, AllowNull, Column, DataType, Model, Table } from 'sequelize-typescript'
+import { AfterCreate, AfterFind, AllowNull, Column, DataType, DeletedAt, Model, Table } from 'sequelize-typescript'
 import { isEmpty } from '../../../../../../common/helpers/helper'
 import { ConnectionApi } from '../../../../../setting/domain/connection/connection'
 import { Resource as IResource, ProductImage, ResourceType } from '../../../../domain/resource'
 
-@Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at' })
+@Table({ underscored: true, createdAt: 'created_at', updatedAt: 'updated_at', paranoid: true })
 export class Resource extends Model<IResource> {
     @AllowNull(false)
     @Column(DataType.STRING)
@@ -36,6 +36,10 @@ export class Resource extends Model<IResource> {
     @AllowNull
     @Column(DataType.JSON)
     declare readonly target_payload: Record<string, any>
+
+    @DeletedAt
+    @Column(DataType.DATE)
+    declare readonly deleted_at: Date
 
     @AfterCreate
     @AfterFind
