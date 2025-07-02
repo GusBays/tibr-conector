@@ -14,3 +14,8 @@ export interface AgisPaginationParams {
     'searchCriteria[currentPage]'?: number
     'searchCriteria[pageSize]'?: number
 }
+
+export interface AgisProductParams {
+    'searchCriteria[filterGroups][0][filters][0][field]': 'SKU'
+    'searchCriteria[filterGroups][0][filters][0][value]': string
+}

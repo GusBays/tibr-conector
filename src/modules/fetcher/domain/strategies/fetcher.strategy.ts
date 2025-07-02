@@ -94,6 +94,8 @@ export abstract class FetcherStrategy<F extends FetcherConnection = any> {
         await this.connectionService.update({ id: this.fetcher.id, status: ConnectionStatus.DONE } as Connection)
     }
 
+    abstract fetchOne(resource: Resource): Promise<Resource>
+
     protected abstract fetchDataBy(
         targets: ImporterConnection[],
         page: number

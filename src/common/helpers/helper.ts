@@ -19,7 +19,7 @@ export function isUndefined(value: any) {
 
 export function isEmpty(value: any) {
     if (Array.isArray(value)) return !value.length
-    if (typeof value === 'string') return !value
+    if (typeof value === 'string') return value.trim().length === 0
     return isNull(value) || isUndefined(value)
 }
 

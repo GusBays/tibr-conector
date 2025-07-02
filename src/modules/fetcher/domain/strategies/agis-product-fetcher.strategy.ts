@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { Dimensions } from '../../../../common/contracts/contracts'
 import { isEmpty, isNotEmpty, isUndefined } from '../../../../common/helpers/helper'
+import { sanitizeAndFixHtml } from '../../../../common/helpers/html'
 import { toFloat } from '../../../agis/domain/agis-helper'
 import {
     AgisProduct,
@@ -27,6 +28,17 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
     constructor(setting: Setting, fetcher: AgisFetcher) {
         super(setting, fetcher)
         this.request = new AgisRequest(fetcher.config.token)
+    }
+
+    async fetchOne(resource: Resource<ProductResourceConfig>): Promise<Resource> {
+        const { sku } = resource.source_payload as AgisProduct
+
+        const source_payload = await this.request.getProduct(sku)
+
+        resource.source_payload = source_payload
+        resource.config = this.getConfigBy(source_payload, resource)
+
+        return resource
     }
 
     protected async fetchDataBy(
@@ -144,14 +156,17 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
             return { images: [...images, ...newImages.map(toProductImage)] }
         }
 
+        const description = getFromConfig('description', getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION))
+        const shortDescription = getFromConfig(
+            'short_description',
+            getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION)
+        )
+
         return {
             name: getFromConfig('name', item.name),
             category_default_id: getFromConfig('category_default_id'),
-            description: getFromConfig('description', getCustomAttributeBy(AgisProductCustomAttributeCode.DESCRIPTION)),
-            short_description: getFromConfig(
-                'short_description',
-                getCustomAttributeBy(AgisProductCustomAttributeCode.SHORT_DESCRIPTION)
-            ),
+            description: isNotEmpty(description) ? sanitizeAndFixHtml(description) : description,
+            short_description: isNotEmpty(shortDescription) ? sanitizeAndFixHtml(shortDescription) : shortDescription,
             markup: getFromConfig('markup', undefined),
             ...getPriceAndBalance(),
             ...getDimensions(),
