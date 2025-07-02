@@ -24,5 +24,7 @@ export interface BagyVariation
         BagyPrice,
         Timestamps {
     balance: number
+    gtin: number | null
     position: number
+    sku: string
 }

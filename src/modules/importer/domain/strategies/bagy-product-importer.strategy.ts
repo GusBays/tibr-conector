@@ -115,7 +115,9 @@ export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> 
                     attribute_value_id: group.attribute_value_id,
                     attribute_value_secondary_id: null,
                     balance: resource.config.balance,
-                    position: group.position
+                    position: group.position,
+                    gtin: resource.config.gtin,
+                    sku: resource.config.sku
                 } as BagyVariation
 
                 if (isNotEmpty(resource.target_payload)) {

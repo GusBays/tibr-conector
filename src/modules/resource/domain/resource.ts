@@ -35,7 +35,7 @@ export interface ProductResourceConfig extends Dimensions {
     markup: number
     price: number
     balance: number
-    reference: string
+    sku: string
     gtin: number
     ncm: string
     active: boolean

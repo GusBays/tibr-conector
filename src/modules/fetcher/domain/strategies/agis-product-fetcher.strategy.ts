@@ -156,7 +156,7 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
             ...getPriceAndBalance(),
             ...getDimensions(),
             ...getImages(),
-            reference: getFromConfig('reference', item.sku),
+            sku: getFromConfig('sku', item.sku),
             gtin: getFromConfig('gtin', +getCustomAttributeBy(AgisProductCustomAttributeCode.GTIN)),
             ncm: getFromConfig('ncm', getCustomAttributeBy(AgisProductCustomAttributeCode.FISCAL_CLASSIFICATION)),
             active: getFromConfig('active', true),
