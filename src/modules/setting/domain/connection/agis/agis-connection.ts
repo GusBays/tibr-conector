@@ -8,6 +8,7 @@ export interface AgisFetcher extends FetcherConnection {
 interface AgisConfig {
     markup: number
     token: string
+    import_as_active: boolean
     min_price: number
     min_stock: number
     weight_default: number
