@@ -4,7 +4,7 @@ import { isEmpty } from '../../../helpers/helper'
 
 export class SequelizeHelper {
     private static perPageMin = 15
-    private static perPageMax = 150
+    private static perPageMax = 1000
 
     static setPaginationOn<T extends Record<string, any>>(options: FindOptions<T>, filter: Filter): void {
         const limit = filter.limit ?? this.perPageMin
