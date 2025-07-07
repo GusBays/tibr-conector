@@ -25,8 +25,8 @@ export abstract class ImporterStrategy<I extends ImporterConnection = any> {
 
     async import(): Promise<void> {
         throwIf(not(this.importer.active), UnprocessableEntity, 'importer', { active: true })
-        throwIf(this.importer.status !== ConnectionStatus.DONE, UnprocessableEntity, 'importer', {
-            status: ConnectionStatus.DONE
+        throwIf(this.importer.status === ConnectionStatus.IN_PROGRESS, UnprocessableEntity, 'importer', {
+            status: [ConnectionStatus.DONE, ConnectionStatus.FAILED]
         })
 
         await this.connectionService.update({ id: this.importer.id, status: ConnectionStatus.IN_PROGRESS } as Connection)

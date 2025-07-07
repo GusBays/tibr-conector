@@ -33,8 +33,8 @@ export abstract class FetcherStrategy<F extends FetcherConnection = any> {
 
     async fetch(): Promise<void> {
         throwIf(not(this.fetcher.active), UnprocessableEntity, 'fetcher', { active: true })
-        throwIf(this.fetcher.status !== ConnectionStatus.DONE, UnprocessableEntity, 'fetcher', {
-            status: ConnectionStatus.DONE
+        throwIf(this.fetcher.status === ConnectionStatus.IN_PROGRESS, UnprocessableEntity, 'fetcher', {
+            status: [ConnectionStatus.DONE, ConnectionStatus.FAILED]
         })
 
         const byImporter = (connection: Connection) => connection.active && isImporter(connection)
@@ -51,7 +51,20 @@ export abstract class FetcherStrategy<F extends FetcherConnection = any> {
         let shouldContinue = true
 
         do {
-            const { resources, hasNextPage } = await this.fetchDataBy(targets, page)
+            let resources: Resource[]
+            let hasNextPage = false
+
+            try {
+                const response = await this.fetchDataBy(targets, page)
+                resources = response.resources
+                hasNextPage = response.hasNextPage
+            } catch (e) {
+                await Promise.all([
+                    this.log(e),
+                    this.connectionService.update({ id: this.fetcher.id, status: ConnectionStatus.FAILED } as Connection)
+                ])
+                break
+            }
 
             const toCreateOrUpdate = async (resource: Resource) => {
                 try {

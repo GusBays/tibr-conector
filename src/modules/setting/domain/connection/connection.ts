@@ -41,7 +41,8 @@ export interface ConnectionFilter extends Partial<Model>, Partial<SettingBelongs
 
 export enum ConnectionStatus {
     DONE = 'done',
-    IN_PROGRESS = 'in_progress'
+    IN_PROGRESS = 'in_progress',
+    FAILED = 'failed'
 }
 
 export enum ConnectionTypeEnum {
