@@ -54,20 +54,22 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
 
         const pages = Math.ceil(total_count / perPage)
 
-        const byConfig = (item: AgisProduct) => {
-            const { price, balance } = this.getBalanceAndPriceOf(item)
-            return price >= this.fetcher.config.min_price && balance >= this.fetcher.config.min_stock
-        }
-        const filtered = items.filter(byConfig)
-
         const toResource = async (target: ImporterConnection) => {
             const rows = await this.resourceService.getAll({
                 source: this.fetcher.api,
-                source_id: filtered.map(({ id }) => id),
+                source_id: items.map(({ id }) => id),
                 target: target.api,
                 type: ResourceType.PRODUCT,
                 ignore_deleted: false
             })
+
+            const byConfig = (item: AgisProduct) => {
+                const exists = rows.find(({ source_id }) => source_id === item.id)
+                const { price, balance } = this.getBalanceAndPriceOf(item)
+                const isAllowed = price >= this.fetcher.config.min_price && balance >= this.fetcher.config.min_stock
+                return exists || isAllowed
+            }
+            const filtered = items.filter(byConfig)
 
             const toFormat = (item: AgisProduct) => {
                 const resource = rows.find(({ source_id }) => source_id === item.id)
@@ -87,7 +89,7 @@ export class AgisProductFetcherStrategy extends FetcherStrategy<AgisFetcher> {
             }
             return filtered.map(toFormat)
         }
-        const resources = isNotEmpty(filtered) ? await Promise.all(targets.map(toResource)) : []
+        const resources = await Promise.all(targets.map(toResource))
 
         return {
             resources: resources.flat(),
