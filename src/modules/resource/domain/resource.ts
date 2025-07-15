@@ -23,6 +23,9 @@ export interface ResourceFilter extends Partial<Model>, Filter {
     target?: string
     target_id?: number
     type?: ResourceType
+    balance?: number | `${number}--${number}`
+    active?: boolean
+    update?: ProductUpdate
     with_stock_on_agis?: boolean
     ignore_deleted?: boolean
 }

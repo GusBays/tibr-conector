@@ -1,4 +1,4 @@
-import { FindOptions, literal, Op, WhereOptions } from 'sequelize'
+import { FindOptions, literal, Op, where as SequelizeWhere, WhereOptions } from 'sequelize'
 import { injectable } from 'tsyringe'
 import { Meta } from '../../../../../common/contracts/contracts'
 import { SequelizeHelper } from '../../../../../common/db/domain/sequelize/sequelize-helper'
@@ -46,9 +46,23 @@ export class ResourceRepositorySequelize implements ResourceRepository {
     }
 
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
+        console.log(filter)
         const where: WhereOptions<IResource> = {}
 
-        const { id, source, source_id, target, target_id, type, with_stock_on_agis, ignore_deleted, q } = filter
+        const {
+            id,
+            source,
+            source_id,
+            target,
+            target_id,
+            type,
+            balance,
+            active,
+            update,
+            with_stock_on_agis,
+            ignore_deleted,
+            q
+        } = filter
 
         if (isNotEmpty(id)) where.id = id
         if (isNotEmpty(source)) where.source = source
@@ -56,20 +70,57 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         if (isNotEmpty(target)) where.target = target
         if (isNotEmpty(target_id)) where.target_id = target_id
         if (isNotEmpty(type)) where.type = type
+
+        const and: any[] = []
+
+        if (isNotEmpty(balance)) {
+            const balanceStr = balance.toString()
+
+            if (!balanceStr.includes('--')) {
+                and.push(
+                    SequelizeWhere(literal(`CAST(JSON_UNQUOTE(JSON_EXTRACT(config, '$.balance')) AS DECIMAL)`), {
+                        [Op.eq]: Number(balanceStr)
+                    })
+                )
+            } else {
+                const [from, to] = balanceStr.split('--').map(Number)
+                and.push(
+                    SequelizeWhere(literal(`CAST(JSON_UNQUOTE(JSON_EXTRACT(config, '$.balance')) AS DECIMAL)`), {
+                        [Op.between]: [from, to]
+                    })
+                )
+            }
+        }
+
+        if (isNotEmpty(active)) {
+            and.push(
+                SequelizeWhere(literal(`CAST(JSON_UNQUOTE(JSON_EXTRACT(config, '$.active')) AS UNSIGNED)`), {
+                    [Op.eq]: Boolean(+active) ? 1 : 0
+                })
+            )
+        }
+
+        if (isNotEmpty(update)) {
+            and.push(SequelizeWhere(literal(`JSON_UNQUOTE(JSON_EXTRACT(config, '$.update'))`), { [Op.eq]: update }))
+        }
+
         if (isNotEmpty(with_stock_on_agis)) {
-            where[Op.and] = [
+            and.push(
                 { source: ConnectionApi.AGIS },
                 literal(`
                     (SELECT SUM(stock.qty)
                         FROM JSON_TABLE(
                             source_payload, 
                             '$.stock[*]' COLUMNS (
-                            qty INT PATH '$.qty'
-                        )
-                    ) AS stock) ${Boolean(+with_stock_on_agis) ? '>' : '<='} 0
+                                qty INT PATH '$.qty'
+                            )
+                        ) AS stock) ${Boolean(+with_stock_on_agis) ? '>' : '<='} 0
                 `)
-            ]
+            )
         }
+
+        if (isNotEmpty(and)) where[Op.and] = and
+
         if (isNotEmpty(q)) {
             const pattern = `%${q}%`
             where[Op.or] = [
