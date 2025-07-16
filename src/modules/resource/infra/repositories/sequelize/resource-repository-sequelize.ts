@@ -93,11 +93,7 @@ export class ResourceRepositorySequelize implements ResourceRepository {
         }
 
         if (isNotEmpty(active)) {
-            and.push(
-                SequelizeWhere(literal(`CAST(JSON_UNQUOTE(JSON_EXTRACT(config, '$.active')) AS UNSIGNED)`), {
-                    [Op.eq]: Boolean(+active) ? 1 : 0
-                })
-            )
+            and.push(SequelizeWhere(literal(`JSON_EXTRACT(config, '$.active')`), { [Op.eq]: Boolean(+active) }))
         }
 
         if (isNotEmpty(update)) {
