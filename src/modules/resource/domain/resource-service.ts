@@ -9,9 +9,10 @@ import { isBagyVariationStockWebhook } from '../../bagy/domain/bagy-helper'
 import { BagyVariation } from '../../bagy/domain/bagy-variation'
 import { BagyWebhookPayload } from '../../bagy/domain/bagy-webhook'
 import { BagyRequest } from '../../bagy/infra/http/axios/bagy-request'
+import { FetcherStrategyFactory } from '../../fetcher/domain/strategies/fetcher.strategy.factory'
 import { ImporterStrategyFactory } from '../../importer/domain/strategies/importer.strategy.factory'
-import { Connection, ConnectionApi, ImporterConnection } from '../../setting/domain/connection/connection'
-import { isImporter } from '../../setting/domain/connection/connection-helper'
+import { Connection, ConnectionApi, FetcherConnection, ImporterConnection } from '../../setting/domain/connection/connection'
+import { isFetcher, isImporter } from '../../setting/domain/connection/connection-helper'
 import { SettingService } from '../../setting/domain/setting-service'
 import { ProductImage, ProductResourceConfig, Resource, ResourceFilter, ResourceType, ResourceTypeEnum } from './resource'
 import { isProductResource } from './resource-helper'
@@ -55,6 +56,20 @@ export class ResourceService {
 
     async delete(filter: ResourceFilter): Promise<void> {
         await this.repository.delete(filter)
+    }
+
+    async fetch(filter: ResourceFilter): Promise<Resource> {
+        const resource = await this.getOne(filter)
+        const setting = await SettingService.getInstance().getOne({})
+        const byApi = (connection: Connection) =>
+            connection.active && connection.api === resource.target && isFetcher(connection)
+        const fetcher = setting.connections.find(byApi) as FetcherConnection
+
+        throwIf(isEmpty(fetcher), NotFound, 'fetcher')
+
+        await FetcherStrategyFactory.getInstance(resource.type, setting, fetcher).fetchOne(resource)
+
+        return await this.update(resource)
     }
 
     async sync(filter: ResourceFilter): Promise<Resource> {
