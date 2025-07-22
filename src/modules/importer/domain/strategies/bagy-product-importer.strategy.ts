@@ -2,7 +2,6 @@ import { isEmpty, isNotEmpty } from '../../../../common/helpers/helper'
 import { BagyProduct, BagyProductImage } from '../../../bagy/domain/bagy-product'
 import { BagyVariation } from '../../../bagy/domain/bagy-variation'
 import { BagyRequest } from '../../../bagy/infra/http/axios/bagy-request'
-import { isAgisFetcher } from '../../../fetcher/domain/fetcher-helper'
 import { ProductImage, ProductResourceConfig, ProductUpdate, Resource } from '../../../resource/domain/resource'
 import { BagyImporter } from '../../../setting/domain/connection/bagy/bagy-connection'
 import { Connection, FetcherConnection } from '../../../setting/domain/connection/connection'
@@ -53,17 +52,14 @@ export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> 
         const shouldGetFull = isEmpty(resource.target_id) || resource.config.update === ProductUpdate.FULL
 
         if (shouldGetFull) {
+            const baseMarkup = isNotEmpty(resource.config.markup) ? resource.config.markup : fetcher.config.markup
+
             product.category_default_id = resource.config.category_default_id ?? this.importer.config.category_default_id
             product.name = resource.config.name
             product.short_description = resource.config.short_description
             product.description = resource.config.description
 
-            if (isAgisFetcher(fetcher)) {
-                const markup = isNotEmpty(resource.config.markup) ? resource.config.markup : fetcher.config.markup
-                product.price = +(resource.config.price * (markup ?? 1)).toFixed(2)
-            } else {
-                product.price = +resource.config.price.toFixed(2)
-            }
+            product.price = +(resource.config.price * (baseMarkup ?? 1)).toFixed(2)
 
             product.weight = resource.config.weight
             product.height = resource.config.height
@@ -106,7 +102,8 @@ export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> 
             product.feature_ids = resource.config.feature_ids
 
             const toVariation = (group: PricingSettingGroup) => {
-                const price = +(product.price * group.markup).toFixed(2)
+                const markup = baseMarkup * group.markup
+                const price = +(resource.config.price * markup).toFixed(2)
 
                 const variation: BagyVariation = {
                     product_id: product.id,
