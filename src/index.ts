@@ -1,7 +1,7 @@
 import cors from '@koa/cors'
 import { createNamespace } from 'cls-hooked'
 import { format, subDays } from 'date-fns'
-import 'dotenv'
+import 'dotenv/config'
 import Koa, { Context } from 'koa'
 import bodyParser from 'koa-bodyparser'
 import Router from 'koa-router'
@@ -68,7 +68,7 @@ async function run(): Promise<void> {
     ]
     await Promise.all(routes.map(toRegister))
 
-    const port = process.env.PORT
+    const port = process.env.APP_PORT
 
     const app = new Koa()
     app.use(cors())
