@@ -61,8 +61,9 @@ export class ResourceService {
     async fetch(filter: ResourceFilter): Promise<Resource> {
         const resource = await this.getOne(filter)
         const setting = await SettingService.getInstance().getOne({})
+
         const byApi = (connection: Connection) =>
-            connection.active && connection.api === resource.target && isFetcher(connection)
+            connection.active && connection.api === resource.source && isFetcher(connection)
         const fetcher = setting.connections.find(byApi) as FetcherConnection
 
         throwIf(isEmpty(fetcher), NotFound, 'fetcher')
