@@ -102,7 +102,8 @@ export class BagyProductImporterStrategy extends ImporterStrategy<BagyImporter> 
             product.feature_ids = resource.config.feature_ids
 
             const toVariation = (group: PricingSettingGroup) => {
-                const markup = baseMarkup * group.markup
+                /** Usar duas casas decimais para valores fechados */
+                const markup = +(baseMarkup * group.markup).toFixed(2)
                 const price = +(resource.config.price * markup).toFixed(2)
 
                 const variation: BagyVariation = {
