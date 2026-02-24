@@ -46,7 +46,6 @@ export class ResourceRepositorySequelize implements ResourceRepository {
     }
 
     private interpret(filter: ResourceFilter): FindOptions<IResource> {
-        console.log(filter)
         const where: WhereOptions<IResource> = {}
 
         const {
